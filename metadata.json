@@ -1,0 +1,6 @@
+{
+  "name": "Elysia AI Assistant",
+  "description": "A real-time, voice-to-voice holographic companion named Elysia, using the Gemini Live API for low-latency audio stream processing and visual holographic projections.",
+  "requestFramePermissions": ["microphone", "display-capture"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
