@@ -461,4 +461,4 @@ Originally scaffolded from a **Google AI Studio** export. Heavily expanded into 
 
 ---
 
-*Built by Sarang / Tech GPT*
+*Built by Sarang*
