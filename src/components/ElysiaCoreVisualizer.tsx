@@ -2,17 +2,17 @@ import React, { useEffect, useRef, useState } from "react";
 import { ElysiaAudioSession, LiveState } from "../lib/audio";
 import { Sparkles } from "lucide-react";
 
-export type ElysiaEmotion = 
-  | "idle" 
-  | "happy" 
-  | "excited" 
-  | "curious" 
-  | "thinking" 
-  | "proud" 
-  | "sad" 
-  | "confused" 
-  | "surprised" 
-  | "embarrassed" 
+export type ElysiaEmotion =
+  | "idle"
+  | "happy"
+  | "excited"
+  | "curious"
+  | "thinking"
+  | "proud"
+  | "sad"
+  | "confused"
+  | "surprised"
+  | "embarrassed"
   | "playful";
 
 interface ElysiaCoreVisualizerProps {
@@ -21,6 +21,7 @@ interface ElysiaCoreVisualizerProps {
   themeColor: string; // Violet, crimson, emerald, celestial, gold, rose, charcoal
   activeEmotion?: ElysiaEmotion;
   characterState: "idle" | "thinking" | "talking";
+  backgroundVideo?: string;
 }
 
 export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
@@ -28,11 +29,12 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
   state,
   themeColor,
   activeEmotion = "idle",
-  characterState
+  characterState,
+  backgroundVideo,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
-  
+
   // Video element refs for character state machine
   const idleVideoRef = useRef<HTMLVideoElement | null>(null);
   const thinkingVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -47,7 +49,7 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
   // Interaction and tracking references
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0.5, y: 0.4 });
   const targetMouseRef = useRef<{ x: number; y: number }>({ x: 0.5, y: 0.4 });
-  
+
   // Physics & Animation states
   const speechVolumeRef = useRef<number>(0);
   const glowRingRef = useRef<number>(0);
@@ -75,14 +77,14 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
             console.warn("Autoplay block detected, retrying muted play:", error);
           });
         }
-      } catch (err) {}
+      } catch (err) { }
     };
 
     const pauseVideo = (videoEl: HTMLVideoElement | null) => {
       if (!videoEl) return;
       try {
         videoEl.pause();
-      } catch (err) {}
+      } catch (err) { }
     };
 
     if (characterState === "idle") {
@@ -194,7 +196,7 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
             sum += dataArray[i];
           }
           audioLevel = sum / bufferLength; // 0 to 255
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // Smooth amplitude tracking for real-time particle excitation
@@ -221,130 +223,8 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
 
       const centerX = width / 2;
 
-      // ==========================================
-      // 1. DRAW GRAND STAGE VOLUMETRIC PROJECTOR BEAM (Cinematic Glow Backlight)
-      // ==========================================
-      ctx.save();
-      const projectorCenterY = height + 40;
-      const baseDiameterX = 280 * s;
-
-      // Volumetric light beams shooting up from projector base
-      const conicalBeamGrad = ctx.createLinearGradient(centerX, height * 0.25, centerX, height);
-      conicalBeamGrad.addColorStop(0, "rgba(0,0,0,0)");
-      conicalBeamGrad.addColorStop(0.4, colors.primary.replace("1)", "0.03)"));
-      conicalBeamGrad.addColorStop(0.75, colors.primary.replace("1)", "0.08)"));
-      conicalBeamGrad.addColorStop(1, colors.secondary.replace("0.8)", "0.18)"));
-
-      ctx.fillStyle = conicalBeamGrad;
-      ctx.beginPath();
-      ctx.moveTo(centerX - baseDiameterX * 0.35, projectorCenterY - 145);
-      ctx.lineTo(centerX + baseDiameterX * 0.35, projectorCenterY - 145);
-      ctx.lineTo(centerX + baseDiameterX * 1.5, height);
-      ctx.lineTo(centerX - baseDiameterX * 1.5, height);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-
-      // ==========================================
-      // 2. MINIMALIST ATMOSPHERE NEURAL FIELDS (SUBTLE GLITCH)
-      // ==========================================
-      const applyGlitch = (state === "connecting" && Math.random() < 0.1) || (Math.random() < 0.005);
-      if (applyGlitch) {
-        ctx.save();
-        ctx.translate((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 2);
-        ctx.fillStyle = Math.random() < 0.5 ? "rgba(236,72,153,0.03)" : "rgba(34,211,238,0.03)";
-        ctx.fillRect(0, 0, width, height);
-      }
-
-      // ==========================================
-      // 3. UPDATE AND DRAW HOLOGRAM NEURAL PARTICLES RISING (Cinematic Stardust)
-      // ==========================================
-      particlesRef.current.forEach((p) => {
-        const riseSpeed = p.speed * (1 + speechVolumeRef.current * 1.8);
-        p.y -= riseSpeed;
-        
-        // Horizontal drift sway
-        p.x += Math.sin(p.y * 0.015 + p.size) * 0.4;
-        
-        // Transparency matches base lift height
-        const currentOpacity = p.opacity * Math.max(0, p.y / height);
-
-        // Recirculate particle if it reaches up too high near her crown
-        if (p.y < height * 0.12) {
-          p.y = height + Math.random() * 30;
-          p.x = Math.random() * width;
-        }
-
-        ctx.fillStyle = colors.primary.replace("1)", `${currentOpacity * 0.45})`);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * s, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      if (applyGlitch) {
-        ctx.restore();
-      }
-
-      // ==========================================
-      // 4. VOICE-REACTIVE GLOW RING (pulses with speaking amplitude)
-      // ==========================================
-      if (glowRingRef.current > 0.01) {
-        ctx.save();
-        const ringRadius = 140 * s;
-        const ringAlpha = glowRingRef.current * 0.6;
-        const lineWidth = 2 + glowRingRef.current * 8;
-
-        // Outer glow
-        ctx.beginPath();
-        ctx.arc(centerX, height * 0.52, ringRadius + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = colors.glow.replace("0.7)", `${ringAlpha * 0.3})`);
-        ctx.lineWidth = lineWidth + 12;
-        ctx.filter = "blur(8px)";
-        ctx.stroke();
-        ctx.filter = "none";
-
-        // Main ring
-        ctx.beginPath();
-        ctx.arc(centerX, height * 0.52, ringRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = colors.primary.replace("1)", `${ringAlpha})`);
-        ctx.lineWidth = lineWidth;
-        ctx.stroke();
-
-        // Inner highlight
-        ctx.beginPath();
-        ctx.arc(centerX, height * 0.52, ringRadius - 2, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255,255,255,${ringAlpha * 0.2})`;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // ==========================================
-      // 5. EMOTION FLASH OVERLAY (brief color pulse on emotion change)
-      // ==========================================
-      if (emotionFlashRef.current > 0.02) {
-        ctx.save();
-        const flashAlpha = emotionFlashRef.current * 0.12;
-        const emotionColors: Record<string, string> = {
-          happy: "rgba(234,179,8,",
-          excited: "rgba(249,115,22,",
-          curious: "rgba(34,211,238,",
-          sad: "rgba(59,130,246,",
-          surprised: "rgba(168,85,247,",
-          confused: "rgba(244,63,94,",
-          embarrassed: "rgba(236,72,153,",
-          playful: "rgba(16,185,129,",
-          proud: "rgba(251,191,36,",
-          idle: colors.primary.replace("1)", ""),
-        };
-        const base = emotionColors[activeEmotion] || emotionColors.idle;
-        const flashGrad = ctx.createRadialGradient(centerX, height * 0.5, 0, centerX, height * 0.5, 260 * s);
-        flashGrad.addColorStop(0, `${base}${flashAlpha})`);
-        flashGrad.addColorStop(1, `${base}0)`);
-        ctx.fillStyle = flashGrad;
-        ctx.fillRect(0, 0, width, height);
-        ctx.restore();
-      }
+      // All canvas visualizations (particles, glow rings, projectors) have been removed for the ultra-minimalist realistic UI.
+      // We only clear the canvas and do nothing else.
 
       animationRef.current = requestAnimationFrame(render);
     };
@@ -361,21 +241,60 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-      {/* 1. Behind Overlay / Atmospheric Backlight Glow (Z-index 0) */}
-      <div className="absolute inset-0 bg-transparent flex items-center justify-center pointer-events-none z-0">
-        <div className={`w-[500px] h-[500px] rounded-full blur-[140px] opacity-25 bg-gradient-to-tr transition-all duration-1000 ${
-          themeColor === "violet" ? "from-purple-600/30 to-fuchsia-600/5" :
-          themeColor === "crimson" ? "from-rose-600/30 to-orange-600/5" :
-          themeColor === "emerald" ? "from-emerald-600/30 to-teal-600/5" :
-          themeColor === "celestial" ? "from-sky-600/30 to-cyan-600/5" :
-          themeColor === "gold" ? "from-amber-600/30 to-yellow-600/5" :
-          themeColor === "rose" ? "from-rose-600/30 to-pink-600/5" :
-          "from-indigo-600/30 to-cyan-600/5"
+      {/* 1. Deep Immersive Cinematic Background (Z-index 0) */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+        {/* Base dark space */}
+        <div className={`absolute inset-0 transition-colors duration-1000 ${
+          backgroundVideo === 'solid' ? (
+            themeColor === 'violet' ? 'bg-[#0f0724]' :
+            themeColor === 'crimson' ? 'bg-[#1a0508]' :
+            themeColor === 'emerald' ? 'bg-[#04140d]' :
+            themeColor === 'celestial' ? 'bg-[#040f1a]' :
+            themeColor === 'gold' ? 'bg-[#1a1103]' :
+            themeColor === 'rose' ? 'bg-[#1a0611]' :
+            'bg-[#060814]'
+          ) : 'bg-[#020205]'
         }`} />
+
+        {/* Dynamic breathing nebula gradient (Hidden if video is solid) */}
+        {backgroundVideo !== "solid" && (
+          <div className={`absolute w-[150vw] h-[150vh] rounded-full blur-[140px] opacity-40 bg-gradient-to-tr transition-all duration-[3000ms] ease-in-out ${themeColor === "violet" ? "from-purple-900/50 via-violet-600/20 to-fuchsia-900/10" :
+              themeColor === "crimson" ? "from-rose-900/50 via-red-600/20 to-orange-900/10" :
+                themeColor === "emerald" ? "from-emerald-900/50 via-teal-600/20 to-emerald-900/10" :
+                  themeColor === "celestial" ? "from-sky-900/50 via-indigo-600/20 to-cyan-900/10" :
+                    themeColor === "gold" ? "from-amber-900/50 via-yellow-600/20 to-orange-900/10" :
+                      themeColor === "rose" ? "from-rose-900/50 via-pink-600/20 to-purple-900/10" :
+                        "from-indigo-900/50 via-slate-800/20 to-cyan-900/10"
+            } ${characterState === "talking" ? "scale-110 animate-pulse" :
+              characterState === "thinking" ? "scale-95 opacity-20" : "scale-100"
+            }`} />
+        )}
+
+        {/* Video Background Layer (Requires user to place bg-<theme>.webm in /assets) */}
+        {backgroundVideo && backgroundVideo !== "solid" && (
+          <div className="absolute inset-0 w-full h-full opacity-100 transition-opacity duration-1000">
+            <video
+              key={`bg-video-${backgroundVideo}`}
+              src={`/assets/${backgroundVideo}`}
+              loop
+              muted
+              playsInline
+              autoPlay
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Hide video if it doesn't exist, falling back to CSS gradient
+                (e.target as HTMLVideoElement).style.display = 'none';
+              }}
+            />
+          </div>
+        )}
+
+        {/* Extra atmospheric vignette overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000000_100%)] opacity-80" />
       </div>
 
       {/* 2. Character Videos state crossfade manager (Z-index 10) */}
-      <div 
+      <div
         id="elysia-animated-presence"
         className="absolute inset-0 z-10 w-full h-full flex items-center justify-center pointer-events-auto transition-all duration-700"
       >
@@ -384,51 +303,48 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
           {/* IDLE VIDEO */}
           <video
             ref={idleVideoRef}
-            src="/assets/idle.mp4"
+            src="/assets/idle.webm"
             loop
             muted
             playsInline
             autoPlay
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out ${
-              characterState === "idle" 
-                ? "opacity-100 z-10" 
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[100vh] max-w-[100vw] object-contain object-bottom transition-opacity duration-700 ease-out ${characterState === "idle"
+                ? "opacity-100 z-10"
                 : "opacity-0 z-0"
-            }`}
+              }`}
             onError={() => handleVideoError("idle")}
           />
 
           {/* THINKING VIDEO */}
           <video
             ref={thinkingVideoRef}
-            src="/assets/thinking.mp4"
+            src="/assets/thinking.webm"
             loop
             muted
             playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out ${
-              characterState === "thinking" 
-                ? "opacity-100 z-10" 
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[100vh] max-w-[100vw] object-contain object-bottom transition-opacity duration-700 ease-out ${characterState === "thinking"
+                ? "opacity-100 z-10"
                 : "opacity-0 z-0"
-            }`}
+              }`}
             onError={() => handleVideoError("thinking")}
           />
 
           {/* TALKING VIDEO */}
           <video
             ref={talkingVideoRef}
-            src="/assets/talking.mp4"
+            src="/assets/talking.webm"
             loop
             muted
             playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out ${
-              characterState === "talking" 
-                ? "opacity-100 z-10" 
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[100vh] max-w-[100vw] object-contain object-bottom transition-opacity duration-700 ease-out ${characterState === "talking"
+                ? "opacity-100 z-10"
                 : "opacity-0 z-0"
-            }`}
+              }`}
             onError={() => handleVideoError("talking")}
           />
 
           {/* Faint cybernetic visual edge grid guard */}
-          <div className="absolute inset-0 border border-white/5 pointer-events-none bg-radial-gradient from-transparent to-black/35" />
+          <div className="absolute inset-0 pointer-events-none" />
 
           {/* Video Placeholder/Fallback Tutorial Overlay if asset files are absent */}
           {hasError && (

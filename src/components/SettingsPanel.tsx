@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Volume2,
   Sparkles,
+  Monitor,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -34,35 +35,37 @@ interface SettingsPanelProps {
 
 type SettingsTab = "general" | "voice" | "system" | "about";
 
-/** A single toggle row matching the existing "Screen Vision Mode" switch style. */
-function ToggleRow({
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
+// Extracted Toggle Component for consistent styling
+function ToggleRow({ 
+  label, 
+  description, 
+  checked, 
+  onChange 
+}: { 
+  label: string; 
+  description?: string; 
+  checked: boolean; 
+  onChange: (v: boolean) => void 
 }) {
   return (
-    <div className="pt-2 border-t border-white/5 flex items-center justify-between text-left">
-      <div className="flex flex-col">
-        <span className="text-[10px] font-bold font-mono text-slate-200">{label}</span>
-        <span className="text-[8px] text-slate-400 uppercase font-mono max-w-[200px]">
-          {description}
-        </span>
+    <div className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition">
+      <div>
+        <div className="text-sm font-display text-white">{label}</div>
+        {description && (
+          <div className="text-[10px] font-mono text-slate-400 mt-1 uppercase tracking-wider">
+            {description}
+          </div>
+        )}
       </div>
       <button
         onClick={() => onChange(!checked)}
-        className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer ${
-          checked ? "bg-cyan-500" : "bg-white/10"
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+          checked ? 'bg-cyan-500' : 'bg-slate-700'
         }`}
       >
-        <div
-          className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-200 ease-in-out ${
-            checked ? "translate-x-5" : "translate-x-0"
+        <span
+          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            checked ? 'translate-x-4' : 'translate-x-0'
           }`}
         />
       </button>
@@ -129,17 +132,7 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
   }, [isOpen]);
 
   const getThemeBadgeGlow = () => {
-    switch (themeColor) {
-      case "violet": return "border-purple-500/30 text-purple-400 bg-purple-500/10";
-      case "crimson": return "border-rose-500/30 text-rose-400 bg-rose-500/10";
-      case "emerald": return "border-emerald-500/30 text-emerald-400 bg-emerald-500/10";
-      case "celestial": return "border-sky-500/30 text-sky-400 bg-sky-500/10";
-      case "gold": return "border-amber-500/30 text-amber-400 bg-amber-500/10";
-      case "rose": return "border-pink-500/30 text-pink-400 bg-pink-500/10";
-      case "charcoal":
-      default:
-        return "border-indigo-500/30 text-indigo-400 bg-indigo-500/10";
-    }
+    return "border-white/10 text-white bg-white/5";
   };
 
   const tabs: { id: SettingsTab; label: string; icon: any }[] = [
@@ -162,27 +155,27 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
             className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
           />
 
-          {/* Slide-over Container — identical shell to MemoryDashboard */}
+          {/* Slide-over Container */}
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="absolute inset-y-0 right-0 w-full max-w-lg bg-[#020206]/95 border-l border-white/15 backdrop-blur-2xl z-50 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+            className="absolute inset-y-0 right-0 w-full max-w-md bg-white/[0.05] border-l border-white/15 backdrop-blur-3xl z-50 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)]"
           >
             {/* Header */}
             <div className="p-6 border-b border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-xl border ${getThemeBadgeGlow()}`}>
-                  <Settings size={22} className="animate-spin [animation-duration:6s]" />
+                  <Settings size={22} className={activeTab === "system" ? "animate-spin" : ""} style={{ animationDuration: '4s' }} />
                 </div>
                 <div>
                   <h3 className="font-display font-medium text-lg tracking-tight text-white flex items-center gap-2">
-                    Elysia Configuration
+                    Elysia Core Config
                     <Sparkles size={14} className="text-cyan-400" />
                   </h3>
                   <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mt-0.5">
-                    System settings &amp; preferences
+                    System Parameters
                   </p>
                 </div>
               </div>
@@ -194,26 +187,52 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
               </button>
             </div>
 
-            {/* Tab selector row — mirrors MemoryDashboard pill style */}
-            <div className="px-6 py-4 border-b border-white/5 flex items-center gap-2 overflow-x-auto">
-              {tabs.map((t) => {
-                const Icon = t.icon;
-                const active = activeTab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveTab(t.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono tracking-wider transition shrink-0 cursor-pointer ${
-                      active
-                        ? "border-cyan-400 bg-cyan-400/10 text-cyan-300"
-                        : "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10"
-                    }`}
-                  >
-                    <Icon size={12} />
-                    <span>{t.label}</span>
-                  </button>
-                );
-              })}
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-white/15 bg-black/10">
+              <button
+                onClick={() => setActiveTab("general")}
+                className={`flex-1 py-4 text-[10px] font-mono tracking-wider uppercase transition cursor-pointer ${
+                  activeTab === "general"
+                    ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-400/5"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                }`}
+              >
+                General
+              </button>
+              <button
+                onClick={() => setActiveTab("voice")}
+                className={`flex-1 py-4 text-[10px] font-mono tracking-wider uppercase transition cursor-pointer ${
+                  activeTab === "voice"
+                    ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-400/5"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                }`}
+              >
+                Voice
+              </button>
+              <button
+                onClick={() => setActiveTab("system")}
+                className={`flex-1 py-4 text-[10px] font-mono tracking-wider uppercase transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeTab === "system"
+                    ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-400/5"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                }`}
+              >
+                <Monitor size={12} />
+                Agent
+                {!agentHealth.online && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse ml-1" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("about")}
+                className={`flex-1 py-4 text-[10px] font-mono tracking-wider uppercase transition cursor-pointer ${
+                  activeTab === "about"
+                    ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-400/5"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                }`}
+              >
+                About
+              </button>
             </div>
 
             {/* Scrollable content area */}
@@ -225,14 +244,31 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
                     Startup &amp; Appearance
                   </div>
 
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-mono tracking-wider text-slate-300 uppercase">
+                      Cinematic Background
+                    </label>
+                    <select
+                      value={settings.backgroundVideo}
+                      onChange={(e) => onChange({ backgroundVideo: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-white font-mono focus:outline-none focus:border-cyan-400/50 transition cursor-pointer appearance-none"
+                    >
+                      <option className="bg-slate-900 text-white" value="">Dynamic CSS Mesh (Default)</option>
+                      <option className="bg-slate-900 text-white" value="solid">Solid Theme Color</option>
+                      <option className="bg-slate-900 text-white" value="bg-6.mp4">Cinematic Scene (1)</option>
+                      <option className="bg-slate-900 text-white" value="bg-7.mp4">Cinematic Scene (2)</option>
+                    </select>
+                    <span className="text-[8px] text-slate-500 uppercase font-mono">
+                      Select a premium looping background video
+                    </span>
+                  </div>
+
                   <ToggleRow
                     label="LAUNCH AT STARTUP"
                     description="Start Elysia silently when Windows logs in"
                     checked={settings.autoStart}
                     onChange={(v) => {
                       onChange({ autoStart: v });
-                      // Persist + push to backend; the desktop agent flips the
-                      // HKCU Run registry key. We just record intent here.
                       void fetch("/api/settings", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -404,7 +440,7 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
                     <Cpu size={16} className="text-slate-500" />
                   </div>
 
-                  <div className="p-3 rounded-xl border border-white/5 bg-white/5 space-y-2">
+                  <div className="p-3 rounded-xl border border-white/10 bg-white/[0.03] space-y-2 shadow-inner">
                     <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
                       <Volume2 size={12} /> Capabilities
                     </div>
@@ -429,7 +465,7 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
                     About Elysia
                   </div>
 
-                  <div className="p-4 rounded-xl border border-white/5 bg-white/5 space-y-3">
+                  <div className="p-4 rounded-xl border border-white/10 bg-white/[0.03] space-y-3 shadow-inner">
                     <div className="flex items-center gap-2">
                       <Info size={14} className="text-cyan-400" />
                       <span className="text-sm font-display text-white">ELYSIA AI Assistant</span>
@@ -465,12 +501,12 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
               )}
             </div>
 
-            {/* Footer status bar — mirrors MemoryDashboard */}
-            <div className="px-6 py-3 border-t border-white/5 bg-white/5 flex items-center justify-between">
-              <span className="text-[9px] font-mono uppercase tracking-widest text-slate-500">
+            {/* Footer status bar */}
+            <div className="px-6 py-4 border-t border-gray-100 bg-zinc-50 flex items-center justify-between">
+              <span className="text-[11px] font-sans text-zinc-500">
                 Preferences auto-save
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-widest text-slate-500">
+              <span className="text-[11px] font-sans font-medium text-zinc-400">
                 Elysia V2
               </span>
             </div>

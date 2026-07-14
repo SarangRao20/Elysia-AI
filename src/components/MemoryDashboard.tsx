@@ -147,7 +147,7 @@ export function MemoryDashboard({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="absolute inset-y-0 right-0 w-full max-w-lg bg-[#020206]/95 border-l border-white/15 backdrop-blur-2xl z-50 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+            className="absolute inset-y-0 right-0 w-full max-w-lg bg-white/[0.05] border-l border-white/15 backdrop-blur-3xl z-50 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)]"
           >
             {/* Header */}
             <div className="p-6 border-b border-white/10 flex items-center justify-between">
@@ -174,7 +174,7 @@ export function MemoryDashboard({
             </div>
 
             {/* Quick stats & action row */}
-            <div className="px-6 py-4 bg-white/5 border-b border-white/5 flex items-center justify-between gap-2.5">
+            <div className="px-6 py-4 bg-black/10 border-b border-white/15 flex items-center justify-between gap-2.5">
               <span className="text-[10px] text-slate-400 font-mono">
                 💡 Elysia remembers these details naturally as you chat.
               </span>
@@ -196,7 +196,7 @@ export function MemoryDashboard({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden border-b border-white/15 bg-[#080812]"
+                  className="overflow-hidden border-b border-white/15 bg-black/40"
                 >
                   <form onSubmit={handleManualAdd} className="p-5 space-y-4">
                     <div>
@@ -261,7 +261,7 @@ export function MemoryDashboard({
             </AnimatePresence>
 
             {/* TAB SELECTOR SCROLLER */}
-            <div className="px-6 py-4 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-light border-white/10 shrink-0">
+            <div className="px-6 py-4 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-white/15 bg-black/10 shrink-0">
               <button
                 onClick={() => setActiveTab("all")}
                 className={`px-3 py-1.5 rounded-full border text-[11px] tracking-wider uppercase transition cursor-pointer shrink-0 ${

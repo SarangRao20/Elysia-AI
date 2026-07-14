@@ -471,25 +471,9 @@ export default function App() {
   // V2: keep the ref in sync so the wake-word callback calls this exact handler.
   connectHandlerRef.current = handleToggleConnection;
 
-  // Maps theme colors to CSS ambient light spots
+  // Minimal dark ambient styles for App container (letting Visualizer shine through)
   const getAmbientStyles = () => {
-    switch (themeColor) {
-      case "violet":
-        return "from-purple-950/40 via-violet-950/20 to-slate-950";
-      case "crimson":
-        return "from-red-950/40 via-orange-950/20 to-slate-950";
-      case "emerald":
-        return "from-emerald-950/40 via-teal-950/20 to-slate-950";
-      case "celestial":
-        return "from-sky-950/45 via-indigo-950/25 to-slate-950";
-      case "gold":
-        return "from-amber-950/30 via-yellow-950/15 to-slate-950";
-      case "rose":
-        return "from-rose-950/40 via-pink-950/20 to-slate-950";
-      case "charcoal":
-      default:
-        return "from-slate-900/50 via-slate-950/30 to-slate-950";
-    }
+    return "from-black/40 via-transparent to-black/60";
   };
 
   const getThemeTextGlow = () => {
@@ -522,8 +506,8 @@ export default function App() {
       id="elysia-holographic-desktop"
       className={`relative w-full h-screen overflow-hidden bg-[#020205] text-white bg-gradient-to-br ${getAmbientStyles()} theme-transition flex flex-col justify-between p-6 sm:p-10 select-none`}
     >
-      {/* Decorative grid pattern background */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.012)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.012)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none opacity-40 z-0" />
+      {/* Decorative cinematic dust/stars (subtle) */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] z-0 mix-blend-screen" />
 
       {/* FULL VIEWPORT HOLOGRAPHIC STAGE: Elysia materializes across the entire screen */}
       <div className="absolute inset-0 z-0 pointer-events-none select-none">
@@ -533,75 +517,12 @@ export default function App() {
           themeColor={themeColor}
           activeEmotion={activeEmotion}
           characterState={characterState}
+          backgroundVideo={settings.backgroundVideo}
         />
       </div>
 
-      {/* Cinematic Auras: Ambient glowing lights casting over the video */}
-      <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-purple-600/15 rounded-full blur-[150px] pointer-events-none mix-blend-screen z-20" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[900px] h-[900px] bg-cyan-600/15 rounded-full blur-[180px] pointer-events-none mix-blend-screen z-20" />
-      <div className="absolute top-[20%] right-[10%] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen z-20" />
-      {/* HEADER SECTION - Minimalist typography */}
-      <header className="relative z-30 flex items-center justify-between w-full max-w-5xl mx-auto select-none pt-4">
-        <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-xl shadow-lg">
-          <span className="text-sm font-bold tracking-[0.3em] text-white/90 uppercase font-sans">
-            Elysia
-          </span>
-          <div className={`w-1.5 h-1.5 rounded-full ${
-            state === "listening" || state === "speaking" 
-              ? "bg-cyan-400" 
-              : "bg-white/30"
-          }`} />
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Faint utilities hidden in margin */}
-          <button
-            onClick={() => setShowGuide(!showGuide)}
-            className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl shadow-lg opacity-80 hover:opacity-100 hover:bg-black/60 text-white transition text-xs font-mono tracking-widest cursor-pointer"
-            title="Sway Themes and Info"
-          >
-            <Compass size={14} />
-            <span className="hidden sm:inline">TOPICS</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowMemoryDashboard(!showMemoryDashboard)}
-            className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl shadow-lg opacity-80 hover:opacity-100 hover:bg-black/60 text-white transition text-xs font-mono tracking-widest cursor-pointer"
-            title="Recollections Database"
-          >
-            <Brain size={14} />
-            <span className="hidden sm:inline">RECALLS</span>
-          </button>
-
-          {/* Real-time screen sharing toggler button inside Elysia glass style header */}
-          <button 
-            onClick={isScreenSharing ? stopScreenSharing : startScreenSharing}
-            className={`flex items-center gap-1.5 bg-black/40 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl shadow-lg transition text-xs font-mono tracking-widest cursor-pointer ${
-              isScreenSharing 
-                ? "text-cyan-400 opacity-100 font-bold border-cyan-500/30 bg-cyan-900/30" 
-                : "opacity-80 hover:opacity-100 hover:bg-black/60 text-white"
-            }`}
-            title="Share Screen with Elysia"
-          >
-            <Monitor size={14} className={isScreenSharing && !isScreenSharingPaused ? "animate-pulse text-cyan-400" : ""} />
-            <span>{isScreenSharing ? "SHARING" : "SHARE SCREEN"}</span>
-          </button>
-
-          {/* V2: Settings toggler button — matches existing faint-to-hover header style */}
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className={`flex items-center gap-1.5 bg-black/40 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl shadow-lg transition text-xs font-mono tracking-widest cursor-pointer ${
-              showSettings
-                ? "text-cyan-400 opacity-100 font-bold border-cyan-500/30 bg-cyan-900/30"
-                : "opacity-80 hover:opacity-100 hover:bg-black/60 text-white"
-            }`}
-            title="Elysia Configuration"
-          >
-            <SettingsIcon size={14} className={showSettings ? "animate-spin [animation-duration:6s]" : ""} />
-            <span>SETTINGS</span>
-          </button>
-        </div>
-      </header>
+      {/* Cinematic Auras Removed for White Background Compatibility */}
+      {/* HEADER SECTION - Removed. Controls moved to floating dock. */}
 
       {/* CORE AVATAR AND VISUALS */}
       <main className="relative z-10 flex-1 w-full max-w-4xl mx-auto flex flex-col items-center justify-between py-6">
@@ -614,28 +535,28 @@ export default function App() {
                 initial={{ opacity: 0, y: -20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                className="flex items-center justify-between gap-4 p-3.5 rounded-2xl border border-indigo-500/20 bg-indigo-950/45 backdrop-blur-xl shadow-lg w-full max-w-md"
+                className="flex items-center justify-between gap-4 p-3.5 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-3xl shadow-2xl w-full max-w-md"
               >
                 <div className="flex items-center gap-3 overflow-hidden text-left">
-                  <div className="p-2 ml-1 rounded-xl bg-indigo-500/20 text-indigo-300">
+                  <div className="p-2 ml-1 rounded-xl bg-white/10 text-white">
                     <Globe size={18} />
                   </div>
                   <div className="overflow-hidden">
-                    <h4 className="text-xs font-bold font-mono tracking-wide text-indigo-200 uppercase">Holographic Projection Broadcast</h4>
-                    <p className="text-xs text-indigo-400 truncate max-w-[200px]">{activeProjectorUrl}</p>
+                    <h4 className="text-xs font-bold font-sans tracking-wide text-white uppercase">Holographic Projection Broadcast</h4>
+                    <p className="text-xs text-slate-400 truncate max-w-[200px]">{activeProjectorUrl}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setActiveProjectorUrl(activeProjectorUrl)}
-                    className="p-2 rounded-xl bg-indigo-500 text-white hover:bg-indigo-400 transition"
+                    className="p-2 rounded-xl bg-white/20 text-white hover:bg-white/30 transition shadow-sm border border-white/10"
                     title="View Frame"
                   >
                     <Maximize2 size={14} />
                   </button>
                   <button
                     onClick={() => setActiveProjectorUrl(null)}
-                    className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition"
+                    className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition"
                   >
                     <X size={14} />
                   </button>
@@ -675,7 +596,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   exit={{ opacity: 0, y: -15, filter: "blur(6px)" }}
                   transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col items-center justify-center w-full bg-black/40 backdrop-blur-md border border-white/5 py-4 px-8 rounded-3xl shadow-2xl"
+                  className="flex flex-col items-center justify-center w-full py-4 px-8"
                 >
                   {textType === "model" && (
                     <h2 className="text-xl sm:text-2xl font-light text-white leading-relaxed tracking-wide font-display max-w-2xl drop-shadow-[0_2px_20px_rgba(0,0,0,0.9)]">
@@ -685,13 +606,13 @@ export default function App() {
 
                   {textType === "user" && (
                     <p className="text-cyan-300 font-mono text-sm sm:text-base tracking-wider flex items-center justify-center gap-2 drop-shadow-[0_1px_10px_rgba(0,0,0,0.85)] font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_cyan]" />
                       <span>&ldquo;{activeText}&rdquo;</span>
                     </p>
                   )}
 
                   {textType === "status" && (
-                    <span className="text-xs sm:text-sm uppercase tracking-[0.3em] font-medium text-white/30 font-sans tracking-widest drop-shadow-[0_1px_4px_rgba(0, 0, 0, 0.5)]">
+                    <span className="text-[10px] sm:text-xs uppercase tracking-[0.4em] font-medium text-slate-400 font-mono drop-shadow-md">
                       {activeText}
                     </span>
                   )}
@@ -708,11 +629,11 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="mt-6 p-5 rounded-2xl border border-white/10 bg-slate-900/85 backdrop-blur-2xl max-w-md text-left w-full absolute z-40 shadow-2xl"
+              className="mt-6 p-5 rounded-3xl border border-white/10 bg-white/[0.05] backdrop-blur-3xl max-w-md text-left w-full absolute z-40 shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
             >
               <div className="flex items-center justify-between mb-3 text-white">
                 <div className="flex items-center gap-1.5 font-display text-sm font-bold tracking-wide">
-                  <Compass size={16} className="text-indigo-400" />
+                  <Compass size={16} className="text-cyan-400" />
                   <span>PLAYFUL CORE SUGGESTIONS</span>
                 </div>
                 <button 
@@ -722,18 +643,18 @@ export default function App() {
                   <X size={14} />
                 </button>
               </div>
-              <p className="text-xs text-slate-400 mb-4 font-mono leading-relaxed">
-                Elysia is equipped with dynamic visual modules and standard text browser projectors. Here are clever triggers to try speaking aloud:
+              <p className="text-xs text-slate-300 mb-4 font-mono leading-relaxed">
+                Elysia is equipped with dynamic visual modules and browser projectors. Here are clever triggers to try speaking aloud:
               </p>
-              <div className="space-y-2 text-xs font-serif italic text-indigo-300">
-                <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition cursor-pointer font-sans normal-case text-slate-200">
-                  ⚡ &quot;Elysia, change atmosphere of your core to crimson&quot; <span className="text-[10px] font-mono text-indigo-400 block mt-0.5 font-medium">Shifts theme color background</span>
+              <div className="space-y-2 text-xs font-serif italic text-cyan-300">
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition cursor-pointer font-sans normal-case text-slate-200">
+                  ⚡ &quot;Elysia, change atmosphere of your core to crimson&quot; <span className="text-[10px] font-mono text-cyan-500 block mt-0.5 font-bold">Shifts theme color background</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition cursor-pointer font-sans normal-case text-slate-200">
-                  ⚡ &quot;Open youtube.com on my screen please&quot; <span className="text-[10px] font-mono text-indigo-400 block mt-0.5 font-medium">Invokes browser projector panel</span>
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition cursor-pointer font-sans normal-case text-slate-200">
+                  ⚡ &quot;Open youtube.com on my screen please&quot; <span className="text-[10px] font-mono text-cyan-500 block mt-0.5 font-bold">Invokes browser projector panel</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition cursor-pointer font-sans normal-case text-slate-200">
-                  ⚡ &quot;Tell me a witty joke and change background to gold&quot; <span className="text-[10px] font-mono text-indigo-400 block mt-0.5 font-medium">Combines tools & voice</span>
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition cursor-pointer font-sans normal-case text-slate-200">
+                  ⚡ &quot;Tell me a witty joke and change background to gold&quot; <span className="text-[10px] font-mono text-cyan-500 block mt-0.5 font-bold">Combines tools & voice</span>
                 </div>
               </div>
             </motion.div>
@@ -747,15 +668,15 @@ export default function App() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="mt-6 flex items-start gap-3 p-4 rounded-2xl border border-rose-500/20 bg-rose-950/40 backdrop-blur-xl max-w-md w-full text-left"
+              className="mt-6 flex items-start gap-3 p-4 rounded-2xl border border-rose-300 bg-rose-50/80 backdrop-blur-xl max-w-md w-full text-left shadow-lg"
             >
-              <CircleAlert className="text-rose-400 shrink-0 mt-0.5" size={18} />
+              <CircleAlert className="text-rose-600 shrink-0 mt-0.5" size={18} />
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-widest text-rose-300 font-mono">Core Error Protocol</h4>
-                <p className="text-xs text-rose-200 mt-1 leading-relaxed">{errorText}</p>
+                <h4 className="text-xs font-bold uppercase tracking-widest text-rose-700 font-mono">Core Error Protocol</h4>
+                <p className="text-xs text-rose-600 mt-1 leading-relaxed font-bold">{errorText}</p>
                 <button
                   onClick={() => setErrorText(null)}
-                  className="mt-2 text-[10px] font-bold text-rose-400 underline font-mono uppercase"
+                  className="mt-2 text-[10px] font-bold text-rose-500 underline font-mono uppercase hover:text-rose-700"
                 >
                   Dismiss Code
                 </button>
@@ -766,76 +687,127 @@ export default function App() {
 
       </main>
 
-      {/* FOOTER INTERFACE WITH WAVEFORM AND CONTROLS */}
-      <footer className="relative z-10 w-full max-w-2xl mx-auto flex flex-col items-center gap-5 mt-auto">
-        
-        {/* Dynamic Minimalist Waveform Visualizer */}
-        <div className="flex items-center justify-center gap-1 h-8 w-44">
-          {[12, 28, 16, 32, 20, 8].map((baseHeight, idx) => {
-            let heightFactor = 0.35;
-            if (state === "speaking") {
-              heightFactor = 0.35 + Math.sin(Date.now() * 0.02 + idx * 0.9) * 0.65;
-            } else if (state === "listening") {
-              heightFactor = 0.2 + Math.sin(Date.now() * 0.01 + idx * 0.5) * 0.4;
-            } else {
-              heightFactor = idx % 2 === 0 ? 0.25 : 0.12;
-            }
-            const calculatedHeight = Math.max(3, baseHeight * heightFactor);
+      {/* Dynamic Minimalist Waveform Visualizer */}
+      <div className="relative z-20 flex items-center justify-center gap-1.5 h-12 w-44 mx-auto mb-4">
+        {[12, 28, 16, 32, 20, 8].map((baseHeight, idx) => {
+          let heightFactor = 0.35;
+          if (state === "speaking") {
+            heightFactor = 0.35 + Math.sin(Date.now() * 0.02 + idx * 0.9) * 0.65;
+          } else if (state === "listening") {
+            heightFactor = 0.2 + Math.sin(Date.now() * 0.01 + idx * 0.5) * 0.4;
+          } else {
+            heightFactor = idx % 2 === 0 ? 0.25 : 0.12;
+          }
+          const calculatedHeight = Math.max(4, baseHeight * heightFactor);
 
-            return (
-              <div
-                key={idx}
-                className={`w-0.5 rounded-full transition-all duration-300 ${
-                  state === "speaking" ? "bg-purple-400" : state === "listening" ? "bg-cyan-400" : "bg-white/10"
-                }`}
-                style={{ height: `${calculatedHeight}px` }}
-              />
-            );
-          })}
-        </div>
+          return (
+            <div
+              key={idx}
+              className={`w-1 rounded-full transition-all duration-300 ${
+                state === "speaking" ? "bg-purple-500" : state === "listening" ? "bg-cyan-500" : "bg-slate-300"
+              }`}
+              style={{ height: `${calculatedHeight}px` }}
+            />
+          );
+        })}
+      </div>
 
-        {/* Glossy Beautiful Primary Connector Core Node */}
-        <div className="flex items-center justify-center relative mb-4">
-          <button 
-            onClick={handleToggleConnection}
-            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 cursor-pointer ${
-              state === "disconnected"
-                ? "bg-white/10 hover:bg-white/15 border border-white/15 text-white shadow-[0_0_20px_rgba(255,255,255,0.02)] hover:scale-105 active:scale-95"
-                : state === "listening"
-                ? "bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/80 text-cyan-200 shadow-[0_0_35px_rgba(34,211,238,0.3)] animate-pulse scale-105"
-                : state === "speaking"
-                ? "bg-purple-500/90 hover:bg-purple-600 border border-purple-400/95 text-white shadow-[0_0_35px_rgba(168,85,247,0.4)] scale-105"
-                : "bg-amber-600 border border-amber-300 text-white animate-spin"
+      {/* INVISIBLE EDGE UI */}
+      {/* Top Right Controls - Sleek Glass Pill */}
+      <div className="absolute top-6 right-6 z-40">
+        <div className="flex items-center p-1.5 gap-1 rounded-full border border-white/10 bg-black/40 backdrop-blur-3xl shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+          <button
+            onClick={() => setShowGuide(!showGuide)}
+            className={`p-2.5 rounded-full transition-all duration-300 ${
+              showGuide ? "bg-white/15 text-white" : "text-slate-400 hover:text-white hover:bg-white/10"
             }`}
-            title={state === "disconnected" ? "Awake Elysia" : "Sleep core"}
+            title="Topics"
           >
-            {state === "disconnected" ? (
-              <Power className="opacity-80" size={24} />
-            ) : state === "connecting" ? (
-              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : state === "listening" ? (
-              <Mic size={24} className="text-cyan-200" />
-            ) : (
-              <Volume2 size={24} className="text-white" />
-            )}
+            <Compass size={18} />
+          </button>
+          
+          <div className="w-[1px] h-4 bg-white/10 mx-1" /> {/* Divider */}
+
+          <button 
+            onClick={() => setShowMemoryDashboard(!showMemoryDashboard)}
+            className={`p-2.5 rounded-full transition-all duration-300 ${
+              showMemoryDashboard ? "bg-white/15 text-white" : "text-slate-400 hover:text-white hover:bg-white/10"
+            }`}
+            title="Recalls"
+          >
+            <Brain size={18} />
           </button>
 
-          {/* Quiet Reset Projection Anchor */}
-          {(activeProjectorUrl || errorText) && (
-            <button 
-              onClick={() => {
-                if (activeProjectorUrl) setActiveProjectorUrl(null);
-                setErrorText(null);
-              }}
-              className="absolute right-[-60px] p-2 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition duration-150 cursor-pointer"
-              title="Reset Screen Broadcasts"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
+          <div className="w-[1px] h-4 bg-white/10 mx-1" /> {/* Divider */}
 
-      </footer>
+          <button 
+            onClick={isScreenSharing ? stopScreenSharing : startScreenSharing}
+            className={`p-2.5 rounded-full transition-all duration-300 ${
+              isScreenSharing 
+                ? "text-cyan-400 bg-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.4)]" 
+                : "text-slate-400 hover:text-white hover:bg-white/10"
+            }`}
+            title="Screen Share"
+          >
+            <Monitor size={18} />
+          </button>
+
+          <div className="w-[1px] h-4 bg-white/10 mx-1" /> {/* Divider */}
+
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-2.5 rounded-full transition-all duration-300 ${
+              showSettings
+                ? "text-indigo-400 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                : "text-slate-400 hover:text-white hover:bg-white/10"
+            }`}
+            title="Settings"
+          >
+            <SettingsIcon size={18} className={showSettings ? "animate-spin [animation-duration:6s]" : ""} />
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom Center Core Connection Orb */}
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-4">
+        <button 
+          onClick={handleToggleConnection}
+          className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-700 cursor-pointer backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.8)] ${
+            state === "disconnected"
+              ? "border border-white/20 text-slate-300 hover:text-white hover:scale-105 bg-black/40 hover:bg-white/10 hover:border-white/40"
+              : state === "listening"
+              ? "border border-cyan-400/50 text-cyan-300 hover:scale-105 bg-cyan-950/40 shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+              : state === "speaking"
+              ? "border border-purple-400/50 text-purple-300 hover:scale-105 bg-purple-950/40 shadow-[0_0_30px_rgba(168,85,247,0.3)]"
+              : "border border-amber-400/50 text-amber-400 animate-spin bg-black/40"
+          }`}
+          title={state === "disconnected" ? "Awake Elysia" : "Sleep core"}
+        >
+          {state === "disconnected" ? (
+            <Power size={22} className="opacity-80" />
+          ) : state === "connecting" ? (
+            <div className="w-6 h-6 border-[2px] border-slate-300 border-t-transparent rounded-full animate-spin" />
+          ) : state === "listening" ? (
+            <Mic size={22} />
+          ) : (
+            <Volume2 size={22} />
+          )}
+        </button>
+        
+        {/* Quiet Reset Projection Anchor */}
+        {(activeProjectorUrl || errorText) && (
+          <button 
+            onClick={() => {
+              if (activeProjectorUrl) setActiveProjectorUrl(null);
+              setErrorText(null);
+            }}
+            className="absolute right-[-50px] top-1/2 -translate-y-1/2 p-2 rounded-full text-slate-300 hover:text-slate-600 transition"
+            title="Reset Screen Broadcasts"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
 
       {/* Holographic Website frame projections */}
       <AnimatePresence>
@@ -858,23 +830,23 @@ export default function App() {
             initial={{ opacity: 0, scale: 0.85, x: 50 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.85, x: 50 }}
-            className={`absolute bottom-6 md:bottom-10 right-6 md:right-10 z-50 w-72 p-4 rounded-2xl border ${
+            className={`absolute bottom-6 md:bottom-10 right-6 md:right-10 z-50 w-72 p-4 rounded-3xl border ${
               isScreenSharingPaused 
-                ? "border-amber-500/20 bg-slate-950/70" 
-                : "border-cyan-500/20 bg-slate-950/70"
-            } backdrop-blur-2xl shadow-2xl overflow-hidden`}
+                ? "border-amber-500/30 bg-black/50" 
+                : "border-white/10 bg-black/50"
+            } backdrop-blur-3xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden`}
           >
             {/* Header / Indicator */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${isScreenSharingPaused ? "bg-amber-400" : "bg-cyan-400 animate-pulse"}`} />
+                <div className={`w-2 h-2 rounded-full ${isScreenSharingPaused ? "bg-amber-400" : "bg-cyan-400 animate-pulse shadow-[0_0_8px_cyan]"}`} />
                 <span className="text-[10px] font-bold font-mono tracking-widest text-slate-200">
-                  {isScreenSharingPaused ? "SCREEN VISION PAUSED" : "SCREEN VISION ACTIVE"}
+                  {isScreenSharingPaused ? "VISION PAUSED" : "VISION ACTIVE"}
                 </span>
               </div>
               <button 
                 onClick={stopScreenSharing}
-                className="text-slate-400 hover:text-white transition-colors duration-150 p-1 rounded-lg hover:bg-white/5 cursor-pointer"
+                className="text-slate-400 hover:text-white transition-colors duration-150 p-1 rounded-lg hover:bg-white/10 cursor-pointer"
                 title="Stop Sharing"
               >
                 <X size={14} />

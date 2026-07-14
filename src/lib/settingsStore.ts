@@ -25,6 +25,8 @@ export interface ElysiaSettings {
   animations: boolean;
   /** Selected Gemini Live voice name. */
   voice: string;
+  /** Selected background video filename. */
+  backgroundVideo: string;
 }
 
 export const GEMINI_VOICES = [
@@ -45,6 +47,7 @@ export const DEFAULT_SETTINGS: ElysiaSettings = {
   sensitivity: 60,
   animations: true,
   voice: "Aoede",
+  backgroundVideo: "solid",
 };
 
 const STORAGE_KEY = "elysia.settings.v2";
