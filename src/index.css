@@ -11,7 +11,8 @@
 .theme-transition {
   transition: background-color 1.2s cubic-bezier(0.4, 0, 0.2, 1), 
               background-image 1.2s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.8s ease;
+              box-shadow 0.8s ease,
+              border-color 0.8s ease;
 }
 
 @keyframes float {
@@ -19,7 +20,25 @@
   50% { transform: translateY(-10px); }
 }
 
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.2), inset 0 0 10px rgba(34, 211, 238, 0.1); }
+  50% { box-shadow: 0 0 40px rgba(34, 211, 238, 0.5), inset 0 0 20px rgba(34, 211, 238, 0.2); border-color: rgba(34, 211, 238, 0.5); }
+}
+
+@keyframes breathing-orb {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(168, 85, 247, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 80px rgba(168, 85, 247, 0.7); }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-breathing {
+  animation: breathing-orb 4s ease-in-out infinite;
 }
 

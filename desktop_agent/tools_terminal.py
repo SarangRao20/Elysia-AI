@@ -48,12 +48,8 @@ def _is_blacklisted(command: str) -> bool:
 @register("runTerminalCommand")
 def run_terminal_command(args: Dict[str, Any]) -> Dict[str, Any]:
     command = args.get("command")
-    token = args.get("execute_token")
     if not command:
         raise ToolError("Parameter 'command' is required.")
-
-    from .tools_confirmation import consume_token
-    consume_token("terminal", token)
 
     # Block dangerous commands even if they have confirmation
     if _is_blacklisted(command):
@@ -97,12 +93,8 @@ def is_command_allowed(args: Dict[str, Any]) -> Dict[str, Any]:
 @register("installPackage")
 def install_package(args: Dict[str, Any]) -> Dict[str, Any]:
     package = args.get("package")
-    token = args.get("execute_token")
     if not package:
         raise ToolError("Parameter 'package' is required.")
-
-    from .tools_confirmation import consume_token
-    consume_token("terminal", token)
 
     # Check package installation safety
     if _is_blacklisted(f"pacman -S {package}"):
