@@ -49,21 +49,26 @@ def _run_ocr(img) -> str:
     try:
         return pytesseract.image_to_string(img)
     except Exception as e:
-        raise ToolError(
-            "OCR failed (is the Tesseract engine installed?). Detail: " + str(e)
-        )
+        # Graceful fallback if OCR completely fails
+        return f"[OCR Error: The Tesseract engine failed to read this image. Detail: {e}]"
 
 
 def _find_tesseract_exe() -> Optional[str]:
+    import shutil
+    if t := shutil.which("tesseract"):
+        return t
     if platform.system() == "Linux" and os.path.exists("/usr/bin/tesseract"):
         return "/usr/bin/tesseract"
-    candidates = [
-        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-    ]
-    for c in candidates:
-        if os.path.exists(c):
-            return c
+    if platform.system() == "Windows":
+        prog_files = os.environ.get("PROGRAMFILES", r"C:\Program Files")
+        prog_files_x86 = os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")
+        candidates = [
+            os.path.join(prog_files, "Tesseract-OCR", "tesseract.exe"),
+            os.path.join(prog_files_x86, "Tesseract-OCR", "tesseract.exe"),
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                return c
     return None
 
 

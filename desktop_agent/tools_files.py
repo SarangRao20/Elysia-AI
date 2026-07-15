@@ -34,6 +34,7 @@ SAFE_ROOTS: List[Path] = [
     HOME / "Music",
     HOME / "Videos",
     Path(os.getcwd()),  # project root
+    Path("/home/sarang/myraa-ai-assistant"),  # Hardcoded active workspace for safety
 ]
 
 # Friendly folder aliases -> resolved path.

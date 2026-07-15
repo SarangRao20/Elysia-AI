@@ -14,7 +14,7 @@ from .registry import ToolError, register
 
 IITM_LINKS = {
     # IITM official
-    "portal": ("IITM BS Portal Login", "https://onlinedegree.iitm.ac.in/"),
+    "portal": ("IITM BS Portal Login", "https://app.onlinedegree.iitm.ac.in/auth/login"),
     "course": ("Course Dashboard", "https://ds.study.iitm.ac.in/auth/login?apply_qualifier=true"),
     "academics": ("Academics Info", "https://study.iitm.ac.in/ds/academics.html"),
     "qualifier": ("Qualifier Portal", "https://app.onlinedegree.iitm.ac.in/auth/login?apply_qualifier=true"),
@@ -28,7 +28,7 @@ IITM_LINKS = {
     # GitHub repos
     "mlt_github": ("MLT GitHub (karthik-iitm)", "https://github.com/karthik-iitm/MLT"),
     # Quick actions
-    "portal_login": ("Portal Login Page", "https://onlinedegree.iitm.ac.in/auth/login"),
+    "portal_login": ("Portal Login Page", "https://app.onlinedegree.iitm.ac.in/auth/login"),
 }
 
 @register("iitmQuickLinks")
@@ -58,7 +58,12 @@ def iitm_open(args: Dict[str, Any]) -> Dict[str, Any]:
         available = ", ".join(sorted(IITM_LINKS.keys()))
         raise ToolError(f"Unknown resource '{key}'. Available: {available}")
     name, url = IITM_LINKS[key]
-    webbrowser.open(url)
+    try:
+        import subprocess
+        # Try launching Google Chrome directly, fallback to default browser
+        subprocess.Popen(["google-chrome-stable", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        webbrowser.open(url)
     return {"result": f"Opened {name} ({url}) in your browser.", "url": url}
 
 
@@ -70,7 +75,11 @@ def iitm_open_custom(args: Dict[str, Any]) -> Dict[str, Any]:
         raise ToolError("Parameter 'url' is required.")
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
-    webbrowser.open(url)
+    try:
+        import subprocess
+        subprocess.Popen(["google-chrome-stable", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        webbrowser.open(url)
     return {"result": f"Opened {url} in your browser.", "url": url}
 
 

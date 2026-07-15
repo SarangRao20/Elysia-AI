@@ -10,8 +10,14 @@ def get_backend() -> OSBackend:
 
     sys = platform.system()
     if sys == "Linux":
-        from .linux_wayland import LinuxWaylandBackend
-        _backend_instance = LinuxWaylandBackend()
+        import os
+        desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+        if "gnome" in desktop:
+            from .linux_gnome import LinuxGnomeBackend
+            _backend_instance = LinuxGnomeBackend()
+        else:
+            from .linux_wayland import LinuxWaylandBackend
+            _backend_instance = LinuxWaylandBackend()
     elif sys == "Windows":
         from .windows import WindowsBackend
         _backend_instance = WindowsBackend()

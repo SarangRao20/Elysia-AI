@@ -22,17 +22,13 @@ DANGEROUS_COMMAND_PATTERNS: list[str] = [
     "su ",     # Escalates privileges
     "reboot", "shutdown", "halt", "poweroff", "suspend",  # Powers down the system
     "pacman -R", "pacman --remove",  # Removes packages - use with caution
-    "rm ", "rmdir ", "mkfs", "dd ",  # File system operations
-    "chmod ", "chown ", "chmod", "chown",  # File permissions
+    "rm -rf /", "mkfs", "dd ",  # Dangerous file system operations
+    "chmod -R 777", "chown -R",  # Dangerous file permissions
     "mount ", "umount ",  # Mount/unmount filesystems
     "iptables ", "firewall-cmd ", "ufw ",  # Network firewalls
     "ip route ", "ip link ", "ip addr ",  # Network manipulation
-    "curl ", "wget ",  # HTTP downloads (could fetch malicious files)
-    "python ", "python3 ", "perl ", "ruby ", "bash ", "sh ", "node ",  # Scripting
-    "gcc ", "make ", "cmake ",  # Build tools
-    "rsync ", "scp ",  # File transfers
     "mdadm ", "lvcreate",  # Storage operations
-    "systemctl stop", "systemctl disable", "systemctl restart", "systemctl start",  # Systemd controls
+    "systemctl stop", "systemctl disable",  # Systemd controls
 ]
 
 

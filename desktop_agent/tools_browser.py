@@ -271,8 +271,15 @@ async def browser_type(args: Dict[str, Any]) -> Dict[str, Any]:
             await page.fill(selector, str(text), timeout=5000)
         else:
             if clear_first:
-                await page.keyboard.press("Control+A")
+                # Try to clear active element robustly
+                await page.evaluate('''() => {
+                    if (document.activeElement && typeof document.activeElement.value !== "undefined") {
+                        document.activeElement.value = "";
+                    }
+                }''')
+                await page.keyboard.press("Control+a")
                 await page.keyboard.press("Delete")
+                await page.keyboard.press("Backspace")
             await page.keyboard.type(str(text))
     except Exception as e:  # noqa: BLE001
         raise ToolError(f"Type failed: {e}")

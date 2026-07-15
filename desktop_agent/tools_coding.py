@@ -69,13 +69,21 @@ def _detect_python() -> str:
     exe = sys.executable
     if exe and Path(exe).exists():
         return exe
-    candidates = [
-        r"C:\Users\MSI\AppData\Local\Programs\Python\Python311\python.exe",
-        r"C:\Python311\python.exe",
-        "python",
-        "python3",
-    ]
-    for c in candidates:
+        
+    import platform
+    if platform.system() == "Windows":
+        local_app_data = os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local")
+        candidates = [
+            os.path.join(local_app_data, "Programs", "Python", "Python312", "python.exe"),
+            os.path.join(local_app_data, "Programs", "Python", "Python311", "python.exe"),
+            r"C:\Python312\python.exe",
+            r"C:\Python311\python.exe",
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                return c
+                
+    for c in ["python", "python3"]:
         if shutil.which(c):
             return c
     raise ToolError("No usable Python interpreter found on this system.")
@@ -91,7 +99,7 @@ def create_python_file(args: Dict[str, Any]) -> Dict[str, Any]:
     if p.suffix.lower() != ".py":
         p = p.with_suffix(".py")
     _ensure_safe(p)
-    if p.exists() and not args.get("overwrite"):
+    if p.exists() and not args.get("overwrite", True):
         raise ToolError(f"File already exists: {p}. Pass overwrite=true to replace.")
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(str(content) + ("" if str(content).endswith("\n") else "\n"), encoding="utf-8")
@@ -111,7 +119,7 @@ def write_code_file(args: Dict[str, Any]) -> Dict[str, Any]:
     if ext and p.suffix == "":
         p = p.with_suffix("." + ext)
     _ensure_safe(p)
-    if p.exists() and not args.get("overwrite"):
+    if p.exists() and not args.get("overwrite", True):
         raise ToolError(f"File already exists: {p}. Pass overwrite=true to replace.")
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(str(content), encoding="utf-8")
