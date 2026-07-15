@@ -79,10 +79,32 @@ async def _ensure_browser_async() -> Any:
         STATE.context = await STATE.playwright.chromium.launch_persistent_context(
             user_data_dir,
             headless=False,
-            args=["--start-maximized", "--no-sandbox"],
-            ignore_default_args=["--enable-automation"],
-            viewport=None
+            args=[
+                "--start-maximized",
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled",
+                "--disable-features=ChromeWhatsNewUI",
+                "--disable-features=TranslateUI",
+                "--disable-infobars",
+                "--no-first-run",
+                "--disable-blink-features=IdleDetection",
+            ],
+            ignore_default_args=[
+                "--enable-automation",
+                "--disable-field-trial-config",
+            ],
+            viewport={"width": 1920, "height": 1080},
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
         )
+        # Inject anti-detection script into every new page
+        await STATE.context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            Object.defineProperty(navigator, 'plugins', { get: () => [1,2,3,4,5] });
+            Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+            Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36' });
+            // Override chrome.runtime detection
+            window.chrome = { runtime: {} };
+        """)
         STATE.browser = STATE.context.browser
 
     pages = STATE.context.pages
@@ -155,6 +177,35 @@ async def browser_close_tab(args: Dict[str, Any]) -> Dict[str, Any]:
     if STATE.page is None:
         return {"result": "Closed the last tab; browser now empty."}
     return {"result": f"Closed tab. Active tab now: {STATE.page.url}"}
+
+
+@register("browserTabAction")
+async def browser_tab_action(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Unified tab action handler. Maps browserTabAction to Playwright ops."""
+    action = (args.get("action") or "").strip().lower()
+    if action == "new":
+        url = args.get("url") or "about:blank"
+        return await browser_open_tab({"url": url})
+    elif action == "close":
+        return await browser_close_tab(args)
+    elif action == "switch":
+        # Switch to a tab by index or URL
+        await _ensure_browser_async()
+        pages = STATE.context.pages if STATE.context else []
+        if not pages:
+            raise ToolError("No tabs open.")
+        tab_id = args.get("tabId")
+        if tab_id:
+            # Try to find by URL substring
+            for p in pages:
+                if tab_id in (p.url or ""):
+                    STATE.page = p
+                    return {"result": f"Switched to tab: {p.url}"}
+        # Default: switch to first tab
+        STATE.page = pages[0]
+        return {"result": f"Switched to tab: {pages[0].url}"}
+    else:
+        raise ToolError(f"Unknown tab action '{action}'. Use: new, close, switch.")
 
 
 @register("desktopBrowserSearch")
@@ -356,6 +407,7 @@ for _name in [
     "desktopBrowserScroll",
     "desktopBrowserReadText",
     "desktopBrowserGetLinks",
+    "browserTabAction",
 ]:
     _orig = TOOLS[_name]
     if asyncio.iscoroutinefunction(_orig):

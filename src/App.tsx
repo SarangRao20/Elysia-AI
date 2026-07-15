@@ -39,6 +39,12 @@ export default function App() {
   const [isScreenSharingPaused, setIsScreenSharingPaused] = useState<boolean>(false);
   const [screenVisionMode, setScreenVisionMode] = useState<boolean>(true);
 
+  // Terminal output logs (tool execution results shown in UI)
+  const [terminalLogs, setTerminalLogs] = useState<{ tool: string; args: any; output: string; time: number }[]>([]);
+  const [showTerminal, setShowTerminal] = useState(false);
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const MAX_TERMINAL_LOGS = 50;
+
   // References to preserve state across intervals
   const screenStreamRef = useRef<MediaStream | null>(null);
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -448,6 +454,12 @@ export default function App() {
       onReminder: (text, id) => {
         console.log("[App] Reminder fired:", text);
         addToast(text, "reminder");
+      },
+      onTerminalOutput: (tool, args, output) => {
+        setTerminalLogs(prev => {
+          const next = [...prev, { tool, args, output, time: Date.now() }];
+          return next.slice(-MAX_TERMINAL_LOGS);
+        });
       }
     });
 
@@ -741,6 +753,18 @@ export default function App() {
           <div className="w-[1px] h-4 bg-white/10 mx-1" /> {/* Divider */}
 
           <button 
+            onClick={() => setShowTerminal(!showTerminal)}
+            className={`p-2.5 rounded-full transition-all duration-300 ${
+              showTerminal ? "text-emerald-400 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.4)]" : "text-slate-400 hover:text-white hover:bg-white/10"
+            }`}
+            title="Terminal Logs"
+          >
+            <Square size={14} />
+          </button>
+
+          <div className="w-[1px] h-4 bg-white/10 mx-1" /> {/* Divider */}
+
+          <button 
             onClick={isScreenSharing ? stopScreenSharing : startScreenSharing}
             className={`p-2.5 rounded-full transition-all duration-300 ${
               isScreenSharing 
@@ -1000,6 +1024,40 @@ export default function App() {
           timestamp: new Date().toISOString(),
         }}
       />
+
+      {/* Terminal Output Panel */}
+      <AnimatePresence>
+        {showTerminal && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-2xl h-64 rounded-2xl border border-white/10 bg-black/80 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+              <span className="text-[10px] font-mono font-bold text-emerald-400 tracking-widest">TERMINAL OUTPUT</span>
+              <button onClick={() => setShowTerminal(false)} className="text-slate-500 hover:text-white p-1">
+                <X size={12} />
+              </button>
+            </div>
+            <div ref={terminalRef} className="h-[calc(100%-36px)] overflow-y-auto p-3 font-mono text-[11px] space-y-1.5">
+              {terminalLogs.length === 0 && (
+                <div className="text-slate-600 italic text-center pt-8">Waiting for tool executions...</div>
+              )}
+              {terminalLogs.map((log, i) => (
+                <div key={i} className="border-l-2 border-emerald-500/30 pl-2 py-0.5">
+                  <span className="text-emerald-400">$ </span>
+                  <span className="text-slate-300">{log.tool}</span>
+                  <span className="text-slate-500 ml-1">{JSON.stringify(log.args)}</span>
+                  <div className="text-slate-400 whitespace-pre-wrap break-all mt-0.5 text-[10px] opacity-80">
+                    {log.output.length > 300 ? log.output.slice(0, 300) + '...' : log.output}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

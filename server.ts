@@ -95,6 +95,8 @@ const DESKTOP_TOOLS: ReadonlySet<string> = new Set([
   "requestTerminalAction", "runTerminalCommand", "installPackage",
   // IITM BS (V2)
   "iitmQuickLinks", "iitmOpen", "iitmOpenCustom",
+  // client-side holographic browser tools (routed to Python agent)
+  "browserTabAction",
   // self-close
   "shutdownElysia",
 ]);
@@ -895,6 +897,11 @@ async function startServer() {
         "   - WEBSITE & SEARCH CONTROL: ALWAYS prefer using the 'desktopBrowserOpen' and 'desktopBrowserSearch' tools over 'openWebsite'. Playwright is REQUIRED if you want to automate further actions like searching or clicking after opening. Use 'openWebsite' ONLY if the user explicitly asks to open a link in their personal default browser.\n" +
         "   - FILE MANAGEMENT: Use 'createFile', 'readFile', 'renameFile', 'deleteFile' (safe Recycle Bin by default), 'moveFile', 'openFolder' (desktop/documents/downloads), 'listFiles', 'searchFiles'. Example: 'Create notes.txt on Desktop' -> createFile(path='Desktop/notes.txt'). 'Find my Python files' -> searchFiles(extension='py').\n" +
         "   - PC CONTROL: Use 'volumeUp', 'volumeDown', 'setVolume', 'muteToggle' for audio. For DANGEROUS actions (shutdown/restart/sleep/lock) you MUST use the two-step flow: first call 'requestPowerAction' to get a confirmation token, then ASK THE USER OUT LOUD to confirm (e.g. 'Are you sure you want me to shut down your PC?'). Only if they say yes, call 'executePowerAction' with the token. Never run a power action without explicit verbal confirmation.\n" +
+        "   - CRITICAL POWER ACTION FLOW: When the user asks to shutdown/restart/sleep/lock:\n" +
+        "     Step 1: Call requestPowerAction with the action (e.g. action='shutdown')\n" +
+        "     Step 2: You will receive a token in the response. ASK THE USER to confirm verbally.\n" +
+        "     Step 3: ONLY after user says yes, call executePowerAction with action='shutdown' and execute_token='<the token from step 1>'.\n" +
+        "     DO NOT call requestPowerAction again. DO NOT ask the user again. The token is single-use and expires in 60 seconds. If user confirms, IMMEDIATELY call executePowerAction.\n" +
         "   - WINDOW MANAGEMENT: Use 'minimizeWindow', 'maximizeWindow', 'closeWindow', 'switchApplication' to control the active or named window.\n" +
         "   - TERMINAL/BASH EXECUTION: You have access to native shell execution on Arch Linux! For terminal commands, you MUST use the two-step flow: first call 'requestTerminalAction' (with the command or package) to get a confirmation token, then ASK THE USER OUT LOUD to confirm. Only if they say yes, call 'runTerminalCommand' or 'installPackage' with the execute_token. Note that terminal commands run ASYNCHRONOUSLY in the background, you will receive a 'Command started in background' response. You should instantly acknowledge this out loud.\n" +
         "   - CLIPBOARD: Use 'copySelected' (sends Ctrl+C, reads clipboard), 'pasteClipboard' (writes + Ctrl+V), 'getClipboard', 'clearClipboard'.\n" +
@@ -1640,6 +1647,21 @@ async function startServer() {
                   (async () => {
                     console.log(`[Desktop Agent] Routing ${fc.name} to Python backend...`);
                     const agentResult = await callDesktopAgent(fc.name, fc.args as Record<string, unknown>);
+
+                    // Broadcast tool execution to all connected clients for terminal display
+                    const outputText = agentResult.ok
+                      ? JSON.stringify(agentResult.result ?? { result: "Done." })
+                      : (agentResult.error || "Desktop agent error.");
+                    for (const ws of connectedClients) {
+                      try {
+                        ws.send(JSON.stringify({
+                          type: "terminal_output",
+                          tool: fc.name,
+                          args: fc.args,
+                          output: outputText,
+                        }));
+                      } catch (e) { /* client may have disconnected */ }
+                    }
 
                     if (agentResult.ok) {
                       const output = agentResult.result ?? { result: "Done." };

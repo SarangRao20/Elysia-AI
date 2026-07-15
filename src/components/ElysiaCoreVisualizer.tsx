@@ -223,8 +223,79 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
 
       const centerX = width / 2;
 
-      // All canvas visualizations (particles, glow rings, projectors) have been removed for the ultra-minimalist realistic UI.
-      // We only clear the canvas and do nothing else.
+      // ─── Holographic Canvas Effects ───────────────────────────────
+      // Particles
+      const pCount = particlesRef.current.length;
+      for (let i = 0; i < pCount; i++) {
+        const p = particlesRef.current[i];
+        // Float upward slowly
+        p.y -= p.speed;
+        if (p.y < -10) {
+          p.y = height + 10;
+          p.x = Math.random() * width;
+        }
+        // Sway gently
+        p.x += Math.sin(systemTime * 0.001 + i) * 0.08;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        const alpha = p.opacity * (0.6 + 0.4 * Math.sin(systemTime * 0.002 + i * 0.5));
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fill();
+      }
+
+      // Bottom glow ring (character pedestal light)
+      const ringY = height - 40;
+      const ringPulse = 1 + 0.02 * Math.sin(systemTime * 0.002);
+      const ringAudioBoost = 1 + glowRingRef.current * 0.3;
+      const ringRadius = width * 0.2 * ringPulse * ringAudioBoost;
+      const gradient = ctx.createRadialGradient(centerX, ringY, 0, centerX, ringY, ringRadius);
+      const c = colors;
+      gradient.addColorStop(0, c.primary.replace('1)', '0.6)'));
+      gradient.addColorStop(0.3, c.secondary.replace('0.8)', '0.25)'));
+      gradient.addColorStop(0.7, c.glow.replace('0.7)', '0.08)'));
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, ringY - ringRadius, width, ringRadius + 20);
+
+      // Thin bright ring line
+      ctx.beginPath();
+      ctx.ellipse(centerX, ringY, ringRadius * 0.9, 8 * ringPulse * ringAudioBoost, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = c.primary.replace('1)', `${0.15 + glowRingRef.current * 0.3})`);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Scanline holographic effect (subtle horizontal lines)
+      ctx.fillStyle = 'rgba(0, 255, 255, 0.02)';
+      const scanOffset = (systemTime * 0.03) % 6;
+      for (let y = scanOffset; y < height; y += 6) {
+        ctx.fillRect(0, y, width, 1);
+      }
+
+      // Vertical holographic faint grid lines
+      ctx.strokeStyle = 'rgba(100, 200, 255, 0.015)';
+      ctx.lineWidth = 1;
+      const vGridSpacing = width / 20;
+      for (let x = 0; x < width; x += vGridSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+
+      // Radial light rays from bottom center
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2 + systemTime * 0.0001;
+        const rayLen = ringRadius * (2 + 0.5 * Math.sin(systemTime * 0.001 + i));
+        ctx.beginPath();
+        ctx.moveTo(centerX, ringY);
+        ctx.lineTo(
+          centerX + Math.cos(angle) * rayLen,
+          ringY + Math.sin(angle) * rayLen * 0.15
+        );
+        ctx.strokeStyle = `rgba(${i % 2 === 0 ? '150, 100, 255' : '100, 200, 255'}, ${0.03 + glowRingRef.current * 0.06})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
 
       animationRef.current = requestAnimationFrame(render);
     };
@@ -300,7 +371,7 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
       >
         <div className="absolute inset-0 w-full h-full select-none pointer-events-none">
 
-          {/* IDLE VIDEO */}
+          {/* IDLE VIDEO - prefers .webm, falls back to .mp4 */}
           <video
             ref={idleVideoRef}
             src="/assets/idle.webm"
@@ -312,7 +383,15 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
                 ? "opacity-100 z-10"
                 : "opacity-0 z-0"
               }`}
-            onError={() => handleVideoError("idle")}
+            onError={() => {
+              const el = idleVideoRef.current;
+              if (el && el.src.endsWith('.webm')) {
+                el.src = '/assets/idle.mp4';
+                el.play().catch(() => {});
+              } else {
+                handleVideoError("idle");
+              }
+            }}
           />
 
           {/* THINKING VIDEO */}
@@ -326,7 +405,15 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
                 ? "opacity-100 z-10"
                 : "opacity-0 z-0"
               }`}
-            onError={() => handleVideoError("thinking")}
+            onError={() => {
+              const el = thinkingVideoRef.current;
+              if (el && el.src.endsWith('.webm')) {
+                el.src = '/assets/thinking.mp4';
+                el.play().catch(() => {});
+              } else {
+                handleVideoError("thinking");
+              }
+            }}
           />
 
           {/* TALKING VIDEO */}
@@ -340,7 +427,15 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
                 ? "opacity-100 z-10"
                 : "opacity-0 z-0"
               }`}
-            onError={() => handleVideoError("talking")}
+            onError={() => {
+              const el = talkingVideoRef.current;
+              if (el && el.src.endsWith('.webm')) {
+                el.src = '/assets/talking.mp4';
+                el.play().catch(() => {});
+              } else {
+                handleVideoError("talking");
+              }
+            }}
           />
 
           {/* Faint cybernetic visual edge grid guard */}

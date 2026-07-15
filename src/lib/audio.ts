@@ -87,6 +87,7 @@ export class ElysiaAudioSession {
   private onError: (error: string) => void;
   private onMemorySync?: (memories: any[]) => void;
   private onReminder?: (text: string, id: string) => void;
+  private onTerminalOutput?: (tool: string, args: any, output: string) => void;
   
   private currentState: LiveState = "disconnected";
   private isActivated = false;
@@ -119,6 +120,7 @@ export class ElysiaAudioSession {
     onError: (error: string) => void;
     onMemorySync?: (memories: any[]) => void;
     onReminder?: (text: string, id: string) => void;
+    onTerminalOutput?: (tool: string, args: any, output: string) => void;
   }) {
     this.onStateChange = handlers.onStateChange;
     this.onTranscription = handlers.onTranscription;
@@ -126,6 +128,7 @@ export class ElysiaAudioSession {
     this.onError = handlers.onError;
     this.onMemorySync = handlers.onMemorySync;
     this.onReminder = handlers.onReminder;
+    this.onTerminalOutput = handlers.onTerminalOutput;
   }
 
   private setState(state: LiveState) {
@@ -310,6 +313,13 @@ export class ElysiaAudioSession {
           if (data.type === "reminder" && data.text) {
             if (this.onReminder) {
               this.onReminder(data.text, data.id || "");
+            }
+          }
+
+          // Handle terminal output (tool execution results)
+          if (data.type === "terminal_output" && data.output) {
+            if (this.onTerminalOutput) {
+              this.onTerminalOutput(data.tool, data.args, data.output);
             }
           }
 

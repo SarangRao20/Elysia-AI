@@ -127,7 +127,7 @@ def _read_run_value() -> str | None:
 def enable_auto_start(args: Dict[str, Any]) -> Dict[str, Any]:
     """Create the Windows startup entry pointing at the silent launcher."""
     if not _is_windows():
-        raise ToolError("Auto-start is only supported on Windows.")
+        return {"result": "Auto-start is not available on this platform (Linux). Consider using systemd for auto-start.", "enabled": False, "platform": sys.platform}
     launcher = _ensure_launcher_exists()
     import winreg  # type: ignore[import-not-found]
 
@@ -151,7 +151,7 @@ def enable_auto_start(args: Dict[str, Any]) -> Dict[str, Any]:
 def disable_auto_start(args: Dict[str, Any]) -> Dict[str, Any]:
     """Remove the Windows startup entry."""
     if not _is_windows():
-        raise ToolError("Auto-start is only supported on Windows.")
+        return {"result": "Auto-start is not available on this platform (Linux). No action needed.", "enabled": False, "platform": sys.platform}
     existing = _read_run_value()
     if existing is None:
         return {"result": "Auto-start was already disabled.", "enabled": False}

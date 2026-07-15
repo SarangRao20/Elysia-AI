@@ -127,6 +127,8 @@ DESKTOP_TOOL_NAMES = [
     "desktopBrowserScroll",
     "desktopBrowserReadText",
     "desktopBrowserGetLinks",
+    # unified client-side browser tool (mapped to Playwright ops)
+    "browserTabAction",
     # coding assistance
     "createPythonFile",
     "runPythonScript",
