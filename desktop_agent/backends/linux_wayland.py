@@ -1,8 +1,10 @@
 from .base import WindowManager, AudioController, ClipboardManager, ScreenshotManager, ApplicationLauncher, TerminalManager, OSBackend
 from typing import Any, Dict, Optional, Tuple
-import subprocess
 import json
 import io
+import os
+import shutil
+import subprocess
 import time
 
 class LinuxWaylandWindowManager(WindowManager):
@@ -155,14 +157,25 @@ class LinuxWaylandApplicationLauncher(ApplicationLauncher):
 class LinuxWaylandTerminalManager(TerminalManager):
     def run_command(self, command: str) -> str:
         try:
-            subprocess.Popen(command, shell=True, close_fds=True, start_new_session=True)
-            return "Command started in background."
+            result = subprocess.run(
+                command, shell=True, capture_output=True, text=True, timeout=120
+            )
+            output = result.stdout + result.stderr
+            if not output.strip():
+                return f"Command finished with exit code {result.returncode}"
+            return output.strip()
+        except subprocess.TimeoutExpired:
+            return "Command timed out (120s) and was terminated."
         except Exception as e:
             return str(e)
 
     def install_package(self, package: str) -> str:
         try:
-            subprocess.Popen(f"kitty -e sudo pacman -S --noconfirm {package}", shell=True, close_fds=True, start_new_session=True)
+            kitty = shutil.which("kitty") or "kitty"
+            subprocess.Popen(
+                f"{kitty} -e sudo pacman -S --noconfirm {package}",
+                shell=True, close_fds=True, start_new_session=True,
+            )
             return "Package installation started in a new terminal window."
         except Exception as e:
             return str(e)

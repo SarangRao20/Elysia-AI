@@ -10,6 +10,7 @@ import base64
 import io
 import os
 import platform
+import shutil
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional

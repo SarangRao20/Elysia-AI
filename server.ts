@@ -207,7 +207,7 @@ async function ensureDesktopAgent(): Promise<void> {
   if (desktopAgentVerified) return;
   if (await isDesktopAgentAlive()) {
     desktopAgentVerified = true;
-    console.log("[Desktop Agent] Already running — 52 tools available.");
+    console.log("[Desktop Agent] Already running.");
     return;
   }
   console.log("[Desktop Agent] Not detected. Auto-starting...");
@@ -216,7 +216,7 @@ async function ensureDesktopAgent(): Promise<void> {
     await new Promise((r) => setTimeout(r, 1000));
     if (await isDesktopAgentAlive()) {
       desktopAgentVerified = true;
-      console.log(`[Desktop Agent] Online after ${i}s — 52 tools available.`);
+      console.log(`[Desktop Agent] Online after ${i}s.`);
       return;
     }
   }

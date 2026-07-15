@@ -55,6 +55,12 @@ def main() -> None:
     _configure_logging(data_dir)
     log = logging.getLogger("Elysia.agent.boot")
 
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except Exception:
+        pass
+
     host = os.environ.get("Elysia_AGENT_HOST", "127.0.0.1")
     port = int(os.environ.get("Elysia_AGENT_PORT", "8765"))
     frozen = getattr(sys, "frozen", False)

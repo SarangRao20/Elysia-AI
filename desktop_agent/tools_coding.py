@@ -61,15 +61,9 @@ LANG_EXT: Dict[str, str] = {
 
 
 def _detect_python() -> str:
-    """Return a working Python interpreter path.
-
-    Prefers sys.executable (the interpreter running this agent), which is the
-    most reliable choice. Falls back to a known Windows location.
-    """
     exe = sys.executable
     if exe and Path(exe).exists():
         return exe
-        
     import platform
     if platform.system() == "Windows":
         local_app_data = os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local")

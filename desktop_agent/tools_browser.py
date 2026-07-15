@@ -1,9 +1,10 @@
 """
 Browser automation via Playwright.
 
-Runs a single persistent headed Chromium instance owned by this agent
-(independent of the in-app holographic BrowserAgent and the separate
-local-agent.js Playwright server on :3001).
+Modes:
+  - managed (default): launches its own headed Chromium instance
+  - cdp: connects to an existing Chrome via --remote-debugging-port=9222
+         (set ELYSIA_BROWSER_MODE=cdp to enable)
 
 Capabilities: open/navigate, new/close tabs, search, click, type, fill forms,
 back/forward, scroll. Lazy-initialized; robust to closed pages.
@@ -12,6 +13,7 @@ back/forward, scroll. Lazy-initialized; robust to closed pages.
 from __future__ import annotations
 
 import asyncio
+import os
 import threading
 from typing import Any, Dict, Optional
 from urllib.parse import quote_plus
@@ -59,7 +61,80 @@ def _run(coro):
 # --- Async Playwright lifecycle ---------------------------------------------
 
 
-async def _ensure_browser_async() -> Any:
+def _browser_mode() -> str:
+    """Return 'cdp' or 'managed' based on ELYSIA_BROWSER_MODE env var."""
+    return os.environ.get("ELYSIA_BROWSER_MODE", "managed").strip().lower()
+
+
+async def _ensure_browser_cdp_async() -> Any:
+    """Connect to an already-running Chrome via DevTools Protocol.
+
+    User must start Chrome with: google-chrome --remote-debugging-port=9222
+    Uses the user's real profile — all cookies, logins, and extensions.
+
+    Falls back to managed mode if Chrome isn't reachable.
+    """
+    if STATE.page is not None:
+        try:
+            if STATE.page.is_closed() or not STATE.browser.is_connected():
+                STATE.reset_playwright()
+            else:
+                return STATE.page
+        except Exception:
+            STATE.reset_playwright()
+
+    if STATE.playwright is None:
+        from playwright.async_api import async_playwright
+        STATE.playwright = await async_playwright().start()
+
+    cdp_url = os.environ.get("ELYSIA_CDP_URL", "http://127.0.0.1:9222")
+    if getattr(STATE, "browser", None) is None:
+        import logging
+        log = logging.getLogger("elysia.desktop")
+        try:
+            STATE.browser = await STATE.playwright.chromium.connect_over_cdp(cdp_url)
+        except Exception as e:
+            log.warning("CDP connect failed (%s). Auto-launching Chrome with --remote-debugging-port=9222...", e)
+            import shutil as _shutil
+            chrome = next(
+                (_shutil.which(n) for n in ("chromium", "google-chrome", "google-chrome-stable", "chromium-browser") if _shutil.which(n)),
+                None
+            )
+            if chrome:
+                import subprocess as _sp
+                _sp.Popen(
+                    [chrome, "--remote-debugging-port=9222",
+                     f"--user-data-dir={os.path.expanduser('~')}/.elysia_chrome_cdp"],
+                    close_fds=True, start_new_session=True
+                )
+                await asyncio.sleep(3)
+                try:
+                    STATE.browser = await STATE.playwright.chromium.connect_over_cdp(cdp_url)
+                except Exception:
+                    pass
+            if STATE.browser is None:
+                log.warning(
+                    "CDP mode: Could not connect to Chrome on port 9222. "
+                    "To use your own Chrome profile, close all Chrome windows first, then run:\n"
+                    "  chromium --remote-debugging-port=9222\n"
+                    "Falling back to managed browser mode."
+                )
+                return await _ensure_browser_managed_async()
+        STATE.context = STATE.browser.contexts[0] if STATE.browser.contexts else None
+        if STATE.context is None:
+            log.warning("No browser context via CDP. Falling back to managed mode.")
+            return await _ensure_browser_managed_async()
+
+    pages = STATE.context.pages
+    if pages:
+        STATE.page = pages[-1]
+    else:
+        STATE.page = await STATE.context.new_page()
+    return STATE.page
+
+
+async def _ensure_browser_managed_async() -> Any:
+    """Launch the agent's own headed Chromium instance."""
     if STATE.page is not None:
         try:
             if STATE.page.is_closed() or not STATE.browser.is_connected():
@@ -74,7 +149,6 @@ async def _ensure_browser_async() -> Any:
         STATE.playwright = await async_playwright().start()
 
     if getattr(STATE, "context", None) is None:
-        import os
         user_data_dir = os.path.join(os.path.expanduser("~"), ".elysia_browser_data")
         STATE.context = await STATE.playwright.chromium.launch_persistent_context(
             user_data_dir,
@@ -109,12 +183,16 @@ async def _ensure_browser_async() -> Any:
 
     pages = STATE.context.pages
     if pages:
-        # Check if the last page is about:blank and close it if there are multiple pages
-        # Or just use the last page
         STATE.page = pages[-1]
     else:
         STATE.page = await STATE.context.new_page()
     return STATE.page
+
+
+async def _ensure_browser_async() -> Any:
+    if _browser_mode() == "cdp":
+        return await _ensure_browser_cdp_async()
+    return await _ensure_browser_managed_async()
 
 
 async def _page() -> Any:
@@ -422,7 +500,13 @@ for _name in [
 
 
 def shutdown_browser() -> None:
-    """Cleanly stop the Playwright browser (called on app shutdown)."""
+    """Cleanly stop the Playwright browser (called on app shutdown).
+
+    In CDP mode the agent does not own the browser, so shutdown is a no-op.
+    """
+    if _browser_mode() == "cdp":
+        STATE.reset_playwright()
+        return
     if STATE.browser is None:
         return
 

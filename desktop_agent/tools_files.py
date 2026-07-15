@@ -24,6 +24,13 @@ from .registry import ToolError, register
 
 HOME = Path(os.path.expanduser("~"))
 
+if platform.system() == "Windows":
+    _ROOT = Path("C:\\")
+elif platform.system() == "Darwin":
+    _ROOT = Path("/System/Volumes/Data")
+else:
+    _ROOT = Path("/")
+
 # Roots under which file operations are freely permitted.
 SAFE_ROOTS: List[Path] = [
     HOME,
@@ -47,8 +54,8 @@ FOLDER_ALIASES: Dict[str, Path] = {
     "music": HOME / "Music",
     "videos": HOME / "Videos",
     "home": HOME,
-    "this pc": Path("C:\\"),
-    "c drive": Path("C:\\"),
+    "this pc": _ROOT,
+    "c drive": _ROOT,
 }
 
 

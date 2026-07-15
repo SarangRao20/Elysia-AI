@@ -49,7 +49,7 @@ def _ensure_launcher_exists() -> str:
         return path
     # Best-effort creation of a silent launcher that starts both backends.
     py_candidates = [
-        r"C:\\Users\\MSI\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+        sys.executable,
         "python",
         "python3",
     ]

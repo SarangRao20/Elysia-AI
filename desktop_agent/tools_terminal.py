@@ -7,28 +7,36 @@ of dangerous commands to prevent accidental system damage.
 
 from __future__ import annotations
 
+import os
+import stat
+import subprocess
+import time
+import uuid
 from typing import Any, Dict
 
-from .registry import ToolError, register
+from .registry import STATE, ToolError, register
 from .backends import get_backend
 
-# Blacklist of dangerous terminal commands that should be blocked.
-# Dangerous patterns are matched via substring in the command.
-# This list is designed for Arch Linux with Hyprland, including commonly
-# misused system commands. Add any additional patterns as needed.
-
+# Destructive command patterns that are always blocked.
+# Only genuinely dangerous operations are listed here.
 DANGEROUS_COMMAND_PATTERNS: list[str] = [
-    "sudo ",  # Escalates privileges - bypasses confirmation
-    "su ",     # Escalates privileges
-    "reboot", "shutdown", "halt", "poweroff", "suspend",  # Powers down the system
-    "pacman -R", "pacman --remove",  # Removes packages - use with caution
-    "rm -rf /", "mkfs", "dd ",  # Dangerous file system operations
-    "chmod -R 777", "chown -R",  # Dangerous file permissions
-    "mount ", "umount ",  # Mount/unmount filesystems
-    "iptables ", "firewall-cmd ", "ufw ",  # Network firewalls
-    "ip route ", "ip link ", "ip addr ",  # Network manipulation
-    "mdadm ", "lvcreate",  # Storage operations
-    "systemctl stop", "systemctl disable",  # Systemd controls
+    # Destructive deletion
+    "rm -rf /", "rm -rf --no-preserve-root", "rm -rf /*",
+    # Format/destroy storage
+    "mkfs.", "dd if=", "dd of=",
+    # Fork bomb
+    ":(){ :|:& };:",
+    # Direct disk writes
+    "> /dev/sda", "> /dev/sdb", "> /dev/nvme",
+    # Wipe
+    "wipefs", "blkdiscard",
+    # Moving root
+    "mv /* ", "mv / ",
+    # Crypto miner / malware download patterns
+    "| sh", "| bash",  # piping to shell
+    "eval ",  # dangerous eval
+    # chmod -R on root
+    "chmod -R 777 /", "chmod -R 777 /*",
 ]
 
 
@@ -55,8 +63,60 @@ def run_terminal_command(args: Dict[str, Any]) -> Dict[str, Any]:
             f"Please use a safer alternative or contact the user who has admin access."
         )
 
+    # Interactive sudo flow: if command starts with sudo, ask for password
+    stripped = command.strip()
+    if stripped.startswith("sudo "):
+        cmd_id = str(uuid.uuid4())
+        STATE.sudo_commands[cmd_id] = {
+            "command": stripped,
+            "expires_at": time.time() + 60,
+        }
+        return {
+            "result": "This command requires sudo privileges. Use provideSudoPassword with the command_id to supply the sudo password.",
+            "needs_sudo": True,
+            "command_id": cmd_id,
+        }
+
     result = get_backend().terminal.run_command(command)
     return {"result": f"Executed command: {command}", "output": result}
+
+
+@register("provideSudoPassword")
+def provide_sudo_password(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Provide the sudo password for a command that requires elevation.
+
+    Call this after runTerminalCommand returns needs_sudo=true.
+    The password is used once and discarded.
+    """
+    cmd_id = args.get("command_id")
+    password = args.get("password")
+    if not cmd_id or not password:
+        raise ToolError("Both 'command_id' and 'password' are required.")
+
+    entry = STATE.sudo_commands.pop(cmd_id, None)
+    if entry is None:
+        raise ToolError("Invalid or expired command_id. Request the command again with runTerminalCommand.")
+    if time.time() > entry["expires_at"]:
+        raise ToolError("Command expired (60s timeout). Request it again with runTerminalCommand.")
+
+    full_command = entry["command"]
+    inner_command = full_command[len("sudo "):].strip()
+    try:
+        proc = subprocess.run(
+            ["sudo", "-S"] + inner_command.split(),
+            input=password + "\n",
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        output = proc.stdout + proc.stderr
+        if not output.strip():
+            output = f"Command finished with exit code {proc.returncode}"
+        return {"result": f"Executed (with sudo): {full_command}", "output": output.strip()}
+    except subprocess.TimeoutExpired:
+        return {"result": "Command timed out (120s) and was terminated."}
+    except FileNotFoundError:
+        return {"result": "sudo not found on this system."}
 
 
 @register("isCommandAllowed")
@@ -104,4 +164,4 @@ def install_package(args: Dict[str, Any]) -> Dict[str, Any]:
     return {"result": f"Attempted to install package: {package}", "output": result}
 
 
-__all__ = ["run_terminal_command", "is_command_allowed", "install_package", "DANGEROUS_COMMAND_PATTERNS"]
+__all__ = ["run_terminal_command", "provide_sudo_password", "is_command_allowed", "install_package", "DANGEROUS_COMMAND_PATTERNS"]

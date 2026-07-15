@@ -40,6 +40,9 @@ class State:
         self.context = None
         self.page = None
 
+        # Sudo command store: command_id -> { command, expires_at }
+        self.sudo_commands: Dict[str, Dict[str, Any]] = {}
+
     def reset_playwright(self) -> None:
         """Tear down any cached Playwright resources (used on errors)."""
         try:
@@ -149,6 +152,7 @@ DESKTOP_TOOL_NAMES = [
     # terminal
     "requestTerminalAction",
     "runTerminalCommand",
+    "provideSudoPassword",
     "installPackage",
     "isCommandAllowed",
     # IITM BS (V2)
