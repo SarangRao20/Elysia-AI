@@ -97,7 +97,7 @@ async def _ensure_browser_cdp_async() -> Any:
             log.warning("CDP connect failed (%s). Auto-launching Chrome with --remote-debugging-port=9222...", e)
             import shutil as _shutil
             chrome = next(
-                (_shutil.which(n) for n in ("chromium", "google-chrome", "google-chrome-stable", "chromium-browser") if _shutil.which(n)),
+                (_shutil.which(n) for n in ("google-chrome-stable", "google-chrome", "chromium", "chromium-browser") if _shutil.which(n)),
                 None
             )
             if chrome:
@@ -116,7 +116,7 @@ async def _ensure_browser_cdp_async() -> Any:
                 log.warning(
                     "CDP mode: Could not connect to Chrome on port 9222. "
                     "To use your own Chrome profile, close all Chrome windows first, then run:\n"
-                    "  chromium --remote-debugging-port=9222\n"
+                    "  google-chrome-stable --remote-debugging-port=9222\n"
                     "Falling back to managed browser mode."
                 )
                 return await _ensure_browser_managed_async()
@@ -150,8 +150,11 @@ async def _ensure_browser_managed_async() -> Any:
 
     if getattr(STATE, "context", None) is None:
         user_data_dir = os.path.join(os.path.expanduser("~"), ".elysia_browser_data")
+        import shutil as _shutil
+        _chrome_channel = "chrome" if _shutil.which("google-chrome-stable") else None
         STATE.context = await STATE.playwright.chromium.launch_persistent_context(
             user_data_dir,
+            channel=_chrome_channel,
             headless=False,
             args=[
                 "--start-maximized",
