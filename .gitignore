@@ -9,5 +9,4 @@ logs/
 WhatsApp*
 memories.json
 settings.json
-*.mp4
-*.webm
+public/assets/bg-*.mp4
