@@ -99,6 +99,14 @@ const DESKTOP_TOOLS: ReadonlySet<string> = new Set([
   "browserTabAction",
   // self-close
   "shutdownElysia",
+  // weather
+  "getWeather",
+  // Hyprland workspace
+  "switchWorkspace", "listWorkspaces", "moveToWorkspace",
+  // news
+  "getNews",
+  // conversation export
+  "exportConversation", "listExports",
 ]);
 
 /**
@@ -927,7 +935,12 @@ async function startServer() {
         "13. TERMINAL & PACKAGE EXECUTION (V2):\n" +
         "   - TERMINAL: Use 'requestTerminalAction' to get a confirmation token, then 'runTerminalCommand' to execute shell commands on Arch Linux. Always confirm with the user first.\n" +
         "   - PACKAGES: Use 'requestTerminalAction' with a package name, then 'installPackage' to install via pacman. Always confirm with the user first.\n" +
-        "   - The user can also configure these in the SETTINGS panel in the UI. If they mention settings, let them know they can adjust them there too.";
+        "   - The user can also configure these in the SETTINGS panel in the UI. If they mention settings, let them know they can adjust them there too.\n" +
+        "14. WEATHER, NEWS, WORKSPACE & CONVERSATION EXPORT:\n" +
+        "   - WEATHER: Use 'getWeather' when the user asks about weather. Pass the location. Example: 'Mumbai mein kitna temperature hai?' -> getWeather(location='Mumbai') then read the result naturally: 'Mumbai mein {temp}°C hai, {description}.'\n" +
+        "   - NEWS: Use 'getNews' when the user asks for news headlines. Supports categories: top, tech, world, india, sports, business. Example: 'Aaj ki tech news batao' -> getNews(category='tech', count=5).\n" +
+        "   - HYPRLAND WORKSPACES: Use 'switchWorkspace' to move to a workspace, 'listWorkspaces' to see available ones, 'moveToWorkspace' to move the active window. Example: 'Workspace 3 pe le chalo' -> switchWorkspace(workspace='3').\n" +
+        "   - CONVERSATION EXPORT: Use 'exportConversation' when the user says 'save this chat', 'baat save kar', 'conversation export kar'. You MUST pass the full conversation text that you have in your context as the 'text' parameter. Confirm out loud: 'Ha, main ye conversation save kar deti hun.' Then call the tool with the conversation text. Use 'listExports' when they ask 'kaun si conversations saved hain'.";
 
       const finalInstructions = formatSystemInstructionsWithMemories(baseInstructions, memories);
 
@@ -1497,6 +1510,41 @@ async function startServer() {
                   name: "shutdownElysia",
                   description: "Gracefully shut down ELYSIA agent and server. Use only when user explicitly asks to close ELYSIA. Requires confirmation token from requestTerminalAction.",
                   parameters: { type: Type.OBJECT, properties: { execute_token: { type: Type.STRING, description: "Confirmation token from requestTerminalAction." } }, required: ["execute_token"] }
+                },
+                {
+                  name: "getWeather",
+                  description: "Get current weather for a location. Use when user asks about weather, temperature, or climate.",
+                  parameters: { type: Type.OBJECT, properties: { location: { type: Type.STRING, description: "City name (e.g. 'Mumbai', 'Delhi', 'New York')." } }, required: ["location"] }
+                },
+                {
+                  name: "switchWorkspace",
+                  description: "Switch to a specific Hyprland workspace by number. Use when user says 'go to workspace 3' or 'switch to workspace 1'.",
+                  parameters: { type: Type.OBJECT, properties: { workspace: { type: Type.STRING, description: "Workspace number or name (e.g. '3', 'special:scratchpad')." } }, required: ["workspace"] }
+                },
+                {
+                  name: "listWorkspaces",
+                  description: "List all available Hyprland workspaces with their IDs.",
+                  parameters: { type: Type.OBJECT, properties: {} }
+                },
+                {
+                  name: "moveToWorkspace",
+                  description: "Move the active window to a different Hyprland workspace.",
+                  parameters: { type: Type.OBJECT, properties: { workspace: { type: Type.STRING, description: "Target workspace number." } }, required: ["workspace"] }
+                },
+                {
+                  name: "getNews",
+                  description: "Get top news headlines. Supports categories: top, tech, world, india, sports, business.",
+                  parameters: { type: Type.OBJECT, properties: { category: { type: Type.STRING, description: "News category: 'top', 'tech', 'world', 'india', 'sports', 'business'." }, count: { type: Type.INTEGER, description: "Number of headlines (max 15, default 5)." } } }
+                },
+                {
+                  name: "exportConversation",
+                  description: "Save the current conversation to a text file on disk. Call this when the user says 'save this conversation', 'baat save kar', 'export chat'. Pass the full conversation text that you have from context.",
+                  parameters: { type: Type.OBJECT, properties: { text: { type: Type.STRING, description: "Full conversation text to save." }, filename: { type: Type.STRING, description: "Optional filename (default auto-generated with timestamp)." } }, required: ["text"] }
+                },
+                {
+                  name: "listExports",
+                  description: "List all previously saved conversation export files.",
+                  parameters: { type: Type.OBJECT, properties: {} }
                 }
               ]
             }

@@ -315,27 +315,26 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
       {/* 1. Deep Immersive Cinematic Background (Z-index 0) */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
         {/* Base dark space */}
-        <div className={`absolute inset-0 transition-colors duration-1000 ${
-          backgroundVideo === 'solid' ? (
+        <div className={`absolute inset-0 transition-colors duration-1000 ${backgroundVideo === 'solid' ? (
             themeColor === 'violet' ? 'bg-[#0f0724]' :
-            themeColor === 'crimson' ? 'bg-[#1a0508]' :
-            themeColor === 'emerald' ? 'bg-[#04140d]' :
-            themeColor === 'celestial' ? 'bg-[#040f1a]' :
-            themeColor === 'gold' ? 'bg-[#1a1103]' :
-            themeColor === 'rose' ? 'bg-[#1a0611]' :
-            'bg-[#060814]'
+              themeColor === 'crimson' ? 'bg-[#1a0508]' :
+                themeColor === 'emerald' ? 'bg-[#04140d]' :
+                  themeColor === 'celestial' ? 'bg-[#040f1a]' :
+                    themeColor === 'gold' ? 'bg-[#1a1103]' :
+                      themeColor === 'rose' ? 'bg-[#1a0611]' :
+                        'bg-[#060814]'
           ) : 'bg-[#020205]'
-        }`} />
+          }`} />
 
         {/* Dynamic breathing nebula gradient (Hidden if video is solid) */}
         {backgroundVideo !== "solid" && (
-          <div className={`absolute w-[150vw] h-[150vh] rounded-full blur-[140px] opacity-40 bg-gradient-to-tr transition-all duration-[3000ms] ease-in-out ${themeColor === "violet" ? "from-purple-900/50 via-violet-600/20 to-fuchsia-900/10" :
-              themeColor === "crimson" ? "from-rose-900/50 via-red-600/20 to-orange-900/10" :
-                themeColor === "emerald" ? "from-emerald-900/50 via-teal-600/20 to-emerald-900/10" :
-                  themeColor === "celestial" ? "from-sky-900/50 via-indigo-600/20 to-cyan-900/10" :
-                    themeColor === "gold" ? "from-amber-900/50 via-yellow-600/20 to-orange-900/10" :
-                      themeColor === "rose" ? "from-rose-900/50 via-pink-600/20 to-purple-900/10" :
-                        "from-indigo-900/50 via-slate-800/20 to-cyan-900/10"
+          <div className={`absolute w-[150vw] h-[150vh] rounded-full blur-[140px] opacity-40 bg-gradient-to-tr transition-all duration-1000 ease-in-out ${themeColor === "violet" ? "from-purple-900/50 via-violet-600/20 to-fuchsia-900/10" :
+            themeColor === "crimson" ? "from-rose-900/50 via-red-600/20 to-orange-900/10" :
+              themeColor === "emerald" ? "from-emerald-900/50 via-teal-600/20 to-emerald-900/10" :
+                themeColor === "celestial" ? "from-sky-900/50 via-indigo-600/20 to-cyan-900/10" :
+                  themeColor === "gold" ? "from-amber-900/50 via-yellow-600/20 to-orange-900/10" :
+                    themeColor === "rose" ? "from-rose-900/50 via-pink-600/20 to-purple-900/10" :
+                      "from-indigo-900/50 via-slate-800/20 to-cyan-900/10"
             } ${characterState === "talking" ? "scale-110 animate-pulse" :
               characterState === "thinking" ? "scale-95 opacity-20" : "scale-100"
             }`} />
@@ -364,10 +363,22 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000000_100%)] opacity-80" />
       </div>
 
-      {/* 2. Character Videos state crossfade manager (Z-index 10) */}
+      {/* Character glow backdrop (separates character from scanlines) */}
+      <div className="absolute inset-0 z-[8] pointer-events-none">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[60vw] h-[60vh] bg-gradient-to-t from-indigo-900/10 via-transparent to-transparent blur-[60px]" />
+      </div>
+
+      {/* Canvas holographic effects behind video */}
+      <canvas
+        id="elysia-hologram-living-canvas"
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-[6]"
+      />
+
+      {/* 2. Character Videos state crossfade manager (Z-index 10 — on top of canvas for crispness) */}
       <div
         id="elysia-animated-presence"
-        className="absolute inset-0 z-10 w-full h-full flex items-center justify-center pointer-events-auto transition-all duration-700"
+        className="absolute inset-0 z-10 w-full h-full flex items-center justify-center pointer-events-auto [transform:translateZ(0)]"
       >
         <div className="absolute inset-0 w-full h-full select-none pointer-events-none">
 
@@ -379,19 +390,11 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
             muted
             playsInline
             autoPlay
-            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[100vh] max-w-[100vw] object-contain object-bottom transition-opacity duration-700 ease-out ${characterState === "idle"
-                ? "opacity-100 z-10"
-                : "opacity-0 z-0"
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-full max-h-[90vh] w-auto object-contain object-bottom transition-all duration-200 ease-out will-change-[opacity,transform] [transform:translateZ(0)] [filter:contrast(1.08)_brightness(1.03)_saturate(1.05)] ${characterState === "idle"
+              ? "opacity-100 scale-100 z-10"
+              : "opacity-0 scale-[0.97] z-0"
               }`}
-            onError={() => {
-              const el = idleVideoRef.current;
-              if (el && el.src.endsWith('.webm')) {
-                el.src = '/assets/idle.mp4';
-                el.play().catch(() => {});
-              } else {
-                handleVideoError("idle");
-              }
-            }}
+            onError={() => handleVideoError("idle")}
           />
 
           {/* THINKING VIDEO */}
@@ -401,19 +404,11 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
             loop
             muted
             playsInline
-            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[100vh] max-w-[100vw] object-contain object-bottom transition-opacity duration-700 ease-out ${characterState === "thinking"
-                ? "opacity-100 z-10"
-                : "opacity-0 z-0"
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-full max-h-[90vh] w-auto object-contain object-bottom transition-all duration-200 ease-out will-change-[opacity,transform] [transform:translateZ(0)] [filter:contrast(1.08)_brightness(1.03)_saturate(1.05)] ${characterState === "thinking"
+              ? "opacity-100 scale-100 z-10"
+              : "opacity-0 scale-[0.97] z-0"
               }`}
-            onError={() => {
-              const el = thinkingVideoRef.current;
-              if (el && el.src.endsWith('.webm')) {
-                el.src = '/assets/thinking.mp4';
-                el.play().catch(() => {});
-              } else {
-                handleVideoError("thinking");
-              }
-            }}
+            onError={() => handleVideoError("thinking")}
           />
 
           {/* TALKING VIDEO */}
@@ -423,19 +418,11 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
             loop
             muted
             playsInline
-            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[100vh] max-w-[100vw] object-contain object-bottom transition-opacity duration-700 ease-out ${characterState === "talking"
-                ? "opacity-100 z-10"
-                : "opacity-0 z-0"
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-full max-h-[90vh] w-auto object-contain object-bottom transition-all duration-200 ease-out will-change-[opacity,transform] [transform:translateZ(0)] [filter:contrast(1.08)_brightness(1.03)_saturate(1.05)] ${characterState === "talking"
+              ? "opacity-100 scale-100 z-10"
+              : "opacity-0 scale-[0.97] z-0"
               }`}
-            onError={() => {
-              const el = talkingVideoRef.current;
-              if (el && el.src.endsWith('.webm')) {
-                el.src = '/assets/talking.mp4';
-                el.play().catch(() => {});
-              } else {
-                handleVideoError("talking");
-              }
-            }}
+            onError={() => handleVideoError("talking")}
           />
 
           {/* Faint cybernetic visual edge grid guard */}
@@ -458,13 +445,6 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
           )}
         </div>
       </div>
-
-      {/* 3. Foreground Hover-Responsive Canvas for glowing particles (Holographic Overlay Z-index 20) */}
-      <canvas
-        id="elysia-hologram-living-canvas"
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full pointer-events-none z-20"
-      />
     </div>
   );
 };

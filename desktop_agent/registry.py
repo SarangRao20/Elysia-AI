@@ -161,6 +161,17 @@ DESKTOP_TOOL_NAMES = [
     "iitmOpenCustom",
     # self-close
     "shutdownElysia",
+    # weather
+    "getWeather",
+    # Hyprland workspaces
+    "switchWorkspace",
+    "listWorkspaces",
+    "moveToWorkspace",
+    # news
+    "getNews",
+    # conversation export
+    "exportConversation",
+    "listExports",
 ]
 
 
@@ -184,6 +195,10 @@ _MODULE_NAMES = [
     "tools_startup",
     "tools_terminal",
     "tools_iitm",
+    "tools_weather",
+    "tools_hyprland",
+    "tools_news",
+    "tools_conversation",
 ]
 
 
@@ -203,6 +218,10 @@ def load_all() -> None:
     import desktop_agent.tools_startup
     import desktop_agent.tools_terminal
     import desktop_agent.tools_iitm
+    import desktop_agent.tools_weather
+    import desktop_agent.tools_hyprland
+    import desktop_agent.tools_news
+    import desktop_agent.tools_conversation
 
 
 __all__ = ["TOOLS", "STATE", "DESKTOP_TOOL_NAMES", "ToolError", "register", "load_all"]
