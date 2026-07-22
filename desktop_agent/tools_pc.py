@@ -56,35 +56,52 @@ def set_brightness(args: Dict[str, Any]) -> Dict[str, Any]:
         raise ToolError("Parameter 'percent' (0-100) is required.")
     pct = max(0.0, min(100.0, pct))
     try:
-        subprocess.run(["brightnessctl", "s", f"{int(pct)}%"], check=False)
+        if platform.system() == "Windows":
+            subprocess.run(["powershell", "-Command", f"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {int(pct)})"], check=False)
+        else:
+            subprocess.run(["brightnessctl", "s", f"{int(pct)}%"], check=False)
         return {"result": f"Brightness set to {int(pct)}%."}
     except Exception as e:
         raise ToolError(f"Failed to set brightness: {e}")
 
+def _get_current_brightness() -> int:
+    if platform.system() == "Windows":
+        out = subprocess.check_output(["powershell", "-Command", "Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness | Select-Object -ExpandProperty CurrentBrightness"], text=True).strip()
+        return int(out) if out.isdigit() else 50
+    else:
+        out = subprocess.check_output(["brightnessctl", "get"], text=True).strip()
+        current = int(out)
+        mx = int(subprocess.check_output(["brightnessctl", "max"], text=True).strip())
+        return int(current / mx * 100)
 
 @register("brightnessUp")
 def brightness_up(args: Dict[str, Any]) -> Dict[str, Any]:
     step = int(args.get("amount", 10))
     try:
-        out = subprocess.check_output(["brightnessctl", "get"], text=True).strip()
-        current = int(out)
-        mx = int(subprocess.check_output(["brightnessctl", "max"], text=True).strip())
-        new_pct = min(100, int(current / mx * 100) + step)
-        subprocess.run(["brightnessctl", "s", f"{new_pct}%"], check=False)
+        current = _get_current_brightness()
+        new_pct = min(100, current + step)
+        
+        if platform.system() == "Windows":
+            subprocess.run(["powershell", "-Command", f"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {new_pct})"], check=False)
+        else:
+            subprocess.run(["brightnessctl", "s", f"{new_pct}%"], check=False)
+            
         return {"result": f"Brightness increased to {new_pct}%."}
     except Exception as e:
         raise ToolError(f"Failed to increase brightness: {e}")
-
 
 @register("brightnessDown")
 def brightness_down(args: Dict[str, Any]) -> Dict[str, Any]:
     step = int(args.get("amount", 10))
     try:
-        out = subprocess.check_output(["brightnessctl", "get"], text=True).strip()
-        current = int(out)
-        mx = int(subprocess.check_output(["brightnessctl", "max"], text=True).strip())
-        new_pct = max(0, int(current / mx * 100) - step)
-        subprocess.run(["brightnessctl", "s", f"{new_pct}%"], check=False)
+        current = _get_current_brightness()
+        new_pct = max(0, current - step)
+        
+        if platform.system() == "Windows":
+            subprocess.run(["powershell", "-Command", f"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {new_pct})"], check=False)
+        else:
+            subprocess.run(["brightnessctl", "s", f"{new_pct}%"], check=False)
+            
         return {"result": f"Brightness decreased to {new_pct}%."}
     except Exception as e:
         raise ToolError(f"Failed to decrease brightness: {e}")
