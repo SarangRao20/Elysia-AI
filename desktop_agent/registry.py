@@ -163,6 +163,10 @@ DESKTOP_TOOL_NAMES = [
     "shutdownElysia",
     # weather
     "getWeather",
+    # OS input
+    "osType",
+    "osPress",
+    "osClick",
     # Hyprland workspaces
     "switchWorkspace",
     "listWorkspaces",
@@ -199,6 +203,7 @@ _MODULE_NAMES = [
     "tools_hyprland",
     "tools_news",
     "tools_conversation",
+    "tools_os_input",
 ]
 
 
@@ -222,6 +227,7 @@ def load_all() -> None:
     import desktop_agent.tools_hyprland
     import desktop_agent.tools_news
     import desktop_agent.tools_conversation
+    import desktop_agent.tools_os_input
 
 
 __all__ = ["TOOLS", "STATE", "DESKTOP_TOOL_NAMES", "ToolError", "register", "load_all"]

@@ -63,7 +63,7 @@ def _run(coro):
 
 def _browser_mode() -> str:
     """Return 'cdp' or 'managed' based on ELYSIA_BROWSER_MODE env var."""
-    return os.environ.get("ELYSIA_BROWSER_MODE", "managed").strip().lower()
+    return os.environ.get("ELYSIA_BROWSER_MODE", "cdp").strip().lower()
 
 
 async def _ensure_browser_cdp_async() -> Any:
@@ -96,16 +96,24 @@ async def _ensure_browser_cdp_async() -> Any:
         except Exception as e:
             log.warning("CDP connect failed (%s). Auto-launching Chrome with --remote-debugging-port=9222...", e)
             import shutil as _shutil
-            chrome = next(
-                (_shutil.which(n) for n in ("google-chrome-stable", "google-chrome", "chromium", "chromium-browser") if _shutil.which(n)),
-                None
-            )
+            import sys as _sys
+            chrome_paths = ["google-chrome-stable", "google-chrome", "chromium", "chromium-browser", "chrome"]
+            if _sys.platform == "win32":
+                chrome_paths.extend([
+                    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+                    os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe")
+                ])
+            chrome = next((p for p in chrome_paths if os.path.exists(p) or _shutil.which(p)), None)
             if chrome:
+                chrome_exe = chrome if os.path.exists(chrome) else _shutil.which(chrome)
                 import subprocess as _sp
                 _sp.Popen(
-                    [chrome, "--remote-debugging-port=9222",
+                    [chrome_exe, "--remote-debugging-port=9222",
                      f"--user-data-dir={os.path.expanduser('~')}/.elysia_chrome_cdp"],
-                    close_fds=True, start_new_session=True,
+                    close_fds=True if _sys.platform != "win32" else False,
+                    start_new_session=True if _sys.platform != "win32" else False,
+                    creationflags=_sp.CREATE_NEW_PROCESS_GROUP | _sp.DETACHED_PROCESS if _sys.platform == "win32" else 0,
                     stdout=_sp.DEVNULL, stderr=_sp.DEVNULL
                 )
                 await asyncio.sleep(3)
@@ -171,7 +179,7 @@ async def _ensure_browser_managed_async() -> Any:
                 "--enable-automation",
                 "--disable-field-trial-config",
             ],
-            viewport={"width": 1920, "height": 1080},
+            no_viewport=True,
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
         )
         # Inject anti-detection script into every new page
