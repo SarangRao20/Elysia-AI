@@ -740,7 +740,7 @@ export default function App() {
           
           <div className="w-[1px] h-4 bg-white/10 mx-1" /> {/* Divider */}
 
-          <button 
+          <button
             onClick={() => setShowMemoryDashboard(!showMemoryDashboard)}
             className={`p-2.5 rounded-full transition-all duration-300 ${
               showMemoryDashboard ? "bg-white/15 text-white" : "text-slate-400 hover:text-white hover:bg-white/10"
@@ -752,7 +752,7 @@ export default function App() {
 
           <div className="w-[1px] h-4 bg-white/10 mx-1" /> {/* Divider */}
 
-          <button 
+          <button
             onClick={() => setShowTerminal(!showTerminal)}
             className={`p-2.5 rounded-full transition-all duration-300 ${
               showTerminal ? "text-emerald-400 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.4)]" : "text-slate-400 hover:text-white hover:bg-white/10"

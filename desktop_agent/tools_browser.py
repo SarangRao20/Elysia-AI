@@ -105,7 +105,8 @@ async def _ensure_browser_cdp_async() -> Any:
                 _sp.Popen(
                     [chrome, "--remote-debugging-port=9222",
                      f"--user-data-dir={os.path.expanduser('~')}/.elysia_chrome_cdp"],
-                    close_fds=True, start_new_session=True
+                    close_fds=True, start_new_session=True,
+                    stdout=_sp.DEVNULL, stderr=_sp.DEVNULL
                 )
                 await asyncio.sleep(3)
                 try:
