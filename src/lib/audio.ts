@@ -150,7 +150,7 @@ export class ElysiaAudioSession {
   }
 
   // Requests microphone and creates connections
-  public async connect(voice?: string) {
+  public async connect(voice?: string, avatarStyle?: "character" | "orb") {
     if (this.isActivated) return;
     this.isActivated = true;
     this.setState("connecting");
@@ -158,8 +158,13 @@ export class ElysiaAudioSession {
     try {
       // 1. Establish custom WebSocket server bridge
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const voiceParam = voice ? `?voice=${encodeURIComponent(voice)}` : "";
-      this.ws = new WebSocket(`${protocol}//${window.location.host}/live${voiceParam}`);
+      
+      const params = new URLSearchParams();
+      if (voice) params.set("voice", voice);
+      if (avatarStyle) params.set("avatarStyle", avatarStyle);
+      const queryStr = params.toString() ? `?${params.toString()}` : "";
+      
+      this.ws = new WebSocket(`${protocol}//${window.location.host}/live${queryStr}`);
       this.ws.binaryType = "blob";
 
       this.ws.onopen = async () => {
@@ -260,6 +265,13 @@ export class ElysiaAudioSession {
           // Root Error Handler message
           if (data.type === "error") {
             this.onError(data.error);
+            this.disconnect();
+            return;
+          }
+          
+          // Shutdown Handler message
+          if (data.type === "shutdown") {
+            window.close();
             this.disconnect();
             return;
           }

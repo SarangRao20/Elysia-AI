@@ -19,11 +19,13 @@ from .backends import get_backend
 
 # Destructive command patterns that are always blocked.
 # Only genuinely dangerous operations are listed here.
+# Destructive command patterns that are always blocked.
 DANGEROUS_COMMAND_PATTERNS: list[str] = [
     # Destructive deletion
-    "rm -rf /", "rm -rf --no-preserve-root", "rm -rf /*",
+    "rm -rf /", "rm -rf --no-preserve-root", "rm -rf /*", "rm -rf ~", "rmdir /s",
+    "del /s", "del /f /s /q", "del *",
     # Format/destroy storage
-    "mkfs.", "dd if=", "dd of=",
+    "mkfs.", "dd if=", "dd of=", "format c:", "diskpart",
     # Fork bomb
     ":(){ :|:& };:",
     # Direct disk writes
@@ -37,6 +39,8 @@ DANGEROUS_COMMAND_PATTERNS: list[str] = [
     "eval ",  # dangerous eval
     # chmod -R on root
     "chmod -R 777 /", "chmod -R 777 /*",
+    # System directory modifications on Windows
+    "C:\\Windows", "C:\\Program Files", "C:\\ProgramData",
 ]
 
 

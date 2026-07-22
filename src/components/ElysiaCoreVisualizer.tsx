@@ -22,6 +22,7 @@ interface ElysiaCoreVisualizerProps {
   activeEmotion?: ElysiaEmotion;
   characterState: "idle" | "thinking" | "talking";
   backgroundVideo?: string;
+  avatarStyle: "character" | "orb";
 }
 
 export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
@@ -31,6 +32,7 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
   activeEmotion = "idle",
   characterState,
   backgroundVideo,
+  avatarStyle,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
@@ -315,7 +317,7 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
       {/* 1. Deep Immersive Cinematic Background (Z-index 0) */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
         {/* Base dark space */}
-        <div className={`absolute inset-0 transition-colors duration-1000 ${backgroundVideo === 'solid' ? (
+        <div className={`absolute inset-0 transition-colors duration-1000 ${avatarStyle === 'orb' ? 'bg-[#080008]' : backgroundVideo === 'solid' ? (
             themeColor === 'violet' ? 'bg-[#0f0724]' :
               themeColor === 'crimson' ? 'bg-[#1a0508]' :
                 themeColor === 'emerald' ? 'bg-[#04140d]' :
@@ -327,7 +329,7 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
           }`} />
 
         {/* Dynamic breathing nebula gradient (Hidden if video is solid) */}
-        {backgroundVideo !== "solid" && (
+        {backgroundVideo !== "solid" && avatarStyle !== "orb" && (
           <div className={`absolute w-[150vw] h-[150vh] rounded-full blur-[140px] opacity-40 bg-gradient-to-tr transition-all duration-1000 ease-in-out ${themeColor === "violet" ? "from-purple-900/50 via-violet-600/20 to-fuchsia-900/10" :
             themeColor === "crimson" ? "from-rose-900/50 via-red-600/20 to-orange-900/10" :
               themeColor === "emerald" ? "from-emerald-900/50 via-teal-600/20 to-emerald-900/10" :
@@ -341,7 +343,7 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
         )}
 
         {/* Video Background Layer (Requires user to place bg-<theme>.webm in /assets) */}
-        {backgroundVideo && backgroundVideo !== "solid" && (
+        {backgroundVideo && backgroundVideo !== "solid" && avatarStyle !== "orb" && (
           <div className="absolute inset-0 w-full h-full opacity-100 transition-opacity duration-1000">
             <video
               key={`bg-video-${backgroundVideo}`}
@@ -381,9 +383,10 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
         className="absolute inset-0 z-10 w-full h-full flex items-center justify-center pointer-events-auto [transform:translateZ(0)]"
       >
         <div className="absolute inset-0 w-full h-full select-none pointer-events-none">
-
-          {/* IDLE VIDEO - prefers .webm, falls back to .mp4 */}
-          <video
+          {avatarStyle === "character" ? (
+            <>
+              {/* IDLE VIDEO - prefers .webm, falls back to .mp4 */}
+              <video
             ref={idleVideoRef}
             src="/assets/idle.webm"
             loop
@@ -441,6 +444,20 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
                 <div>• thinking.mp4 (State: Thinking)</div>
                 <div>• talking.mp4 (State: Talking)</div>
               </div>
+            </div>
+          )}
+            </>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <img 
+                src={characterState === "idle" ? "/assets/download_static.png" : "/assets/download.gif"}
+                alt="Aegis Core" 
+                className={`transition-all duration-700 ease-in-out object-contain w-full h-full ${
+                  characterState === "idle" ? "scale-90 opacity-90" :
+                  characterState === "thinking" ? "scale-75 opacity-70" :
+                  "scale-100 opacity-100"
+                }`}
+              />
             </div>
           )}
         </div>

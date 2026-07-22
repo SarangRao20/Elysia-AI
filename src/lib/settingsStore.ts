@@ -27,6 +27,8 @@ export interface ElysiaSettings {
   voice: string;
   /** Selected background video filename. */
   backgroundVideo: string;
+  /** Avatar style ("character" or "orb"). */
+  avatarStyle: "character" | "orb";
 }
 
 export const GEMINI_VOICES = [
@@ -46,8 +48,9 @@ export const DEFAULT_SETTINGS: ElysiaSettings = {
   micDeviceId: "",
   sensitivity: 60,
   animations: true,
-  voice: "Aoede",
+  voice: "Charon",
   backgroundVideo: "solid",
+  avatarStyle: "orb",
 };
 
 const STORAGE_KEY = "elysia.settings.v2";

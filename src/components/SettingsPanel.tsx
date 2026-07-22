@@ -48,7 +48,7 @@ function ToggleRow({
   onChange: (v: boolean) => void 
 }) {
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition">
+    <div className="flex items-center justify-between p-5 rounded-2xl border border-white/5 bg-gradient-to-r from-white/[0.02] to-transparent hover:border-cyan-500/30 hover:bg-cyan-950/20 transition-all duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
       <div>
         <div className="text-sm font-display text-white">{label}</div>
         {description && (
@@ -59,8 +59,8 @@ function ToggleRow({
       </div>
       <button
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-          checked ? 'bg-cyan-500' : 'bg-slate-700'
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none shadow-inner ${
+          checked ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-slate-800'
         }`}
       >
         <span
@@ -83,7 +83,7 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
     ram?: string;
   }>({ online: false });
 
-  // Enumerate microphones (mirrors how audio.ts grabs getUserMedia).
+  // Enumerate microphones
   useEffect(() => {
     if (!isOpen) return;
     const enumerate = async () => {
@@ -98,12 +98,11 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
     enumerate();
   }, [isOpen]);
 
-  // Probe desktop agent health (port 8765) via the server-side logs/health proxy.
+  // Probe desktop agent health
   useEffect(() => {
     if (!isOpen) return;
     const probe = async () => {
       try {
-        // Re-use the local agent directly (same machine, same browser).
         const res = await fetch("http://127.0.0.1:8765/health", { cache: "no-store" });
         if (!res.ok) {
           setAgentHealth({ online: false });
@@ -112,7 +111,6 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
         const data = await res.json();
         setAgentHealth({ online: true, toolCount: data.tool_count });
       } catch {
-        // Cross-origin may fail; try the server proxy as a fallback.
         try {
           const res2 = await fetch("/api/agent-health", { cache: "no-store" });
           if (res2.ok) {
@@ -120,9 +118,7 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
             setAgentHealth({ online: !!d.online, toolCount: d.tool_count });
             return;
           }
-        } catch {
-          /* ignore */
-        }
+        } catch { }
         setAgentHealth({ online: false });
       }
     };
@@ -131,384 +127,396 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
     return () => clearInterval(id);
   }, [isOpen]);
 
-  const getThemeBadgeGlow = () => {
-    return "border-white/10 text-white bg-white/5";
-  };
-
   const tabs: { id: SettingsTab; label: string; icon: any }[] = [
-    { id: "general", label: "GENERAL", icon: Power },
-    { id: "voice", label: "VOICE", icon: Mic },
-    { id: "system", label: "SYSTEM", icon: Cpu },
-    { id: "about", label: "ABOUT", icon: Info },
+    { id: "general", label: "General", icon: Power },
+    { id: "voice", label: "Voice & Audio", icon: Mic },
+    { id: "system", label: "System Agent", icon: Cpu },
+    { id: "about", label: "About Elysia", icon: Info },
   ];
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop Overlay — identical to MemoryDashboard */}
+          {/* Backdrop Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-950/80 z-40 backdrop-blur-md"
           />
 
-          {/* Slide-over Container */}
+          {/* Centered macOS-style Modal Container */}
           <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="absolute inset-y-0 right-0 w-full max-w-md bg-white/[0.05] border-l border-white/15 backdrop-blur-3xl z-50 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-5xl h-[80vh] max-h-[800px] bg-slate-950/70 border border-white/10 backdrop-blur-[60px] z-50 flex shadow-[0_0_150px_rgba(0,0,0,0.8)] overflow-hidden rounded-3xl ring-1 ring-white/10"
           >
-            {/* Header */}
-            <div className="p-6 border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl border ${getThemeBadgeGlow()}`}>
-                  <Settings size={22} className={activeTab === "system" ? "animate-spin" : ""} style={{ animationDuration: '4s' }} />
-                </div>
-                <div>
-                  <h3 className="font-display font-medium text-lg tracking-tight text-white flex items-center gap-2">
-                    Elysia Core Config
-                    <Sparkles size={14} className="text-cyan-400" />
-                  </h3>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mt-0.5">
-                    System Parameters
-                  </p>
+            {/* LEFT SIDEBAR */}
+            <div className="w-64 border-r border-white/10 bg-black/20 flex flex-col">
+              {/* Sidebar Header */}
+              <div className="p-6 pb-8 border-b border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl border border-white/10 bg-white/5">
+                    <Settings size={22} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-medium text-lg tracking-tight text-white flex items-center gap-2">
+                      Settings
+                    </h3>
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 mt-0.5 flex items-center gap-1">
+                      <Sparkles size={10} /> {settings.avatarStyle === "orb" ? "Aegis Core" : "Elysia Core"}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex border-b border-white/15 bg-black/10">
-              <button
-                onClick={() => setActiveTab("general")}
-                className={`flex-1 py-4 text-[10px] font-mono tracking-wider uppercase transition cursor-pointer ${
-                  activeTab === "general"
-                    ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-400/5"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                }`}
-              >
-                General
-              </button>
-              <button
-                onClick={() => setActiveTab("voice")}
-                className={`flex-1 py-4 text-[10px] font-mono tracking-wider uppercase transition cursor-pointer ${
-                  activeTab === "voice"
-                    ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-400/5"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                }`}
-              >
-                Voice
-              </button>
-              <button
-                onClick={() => setActiveTab("system")}
-                className={`flex-1 py-4 text-[10px] font-mono tracking-wider uppercase transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                  activeTab === "system"
-                    ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-400/5"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                }`}
-              >
-                <Monitor size={12} />
-                Agent
-                {!agentHealth.online && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse ml-1" />
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab("about")}
-                className={`flex-1 py-4 text-[10px] font-mono tracking-wider uppercase transition cursor-pointer ${
-                  activeTab === "about"
-                    ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-400/5"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                }`}
-              >
-                About
-              </button>
-            </div>
-
-            {/* Scrollable content area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* ---------------- GENERAL ---------------- */}
-              {activeTab === "general" && (
-                <div className="space-y-4">
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
-                    Startup &amp; Appearance
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-mono tracking-wider text-slate-300 uppercase">
-                      Cinematic Background
-                    </label>
-                    <select
-                      value={settings.backgroundVideo}
-                      onChange={(e) => onChange({ backgroundVideo: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-white font-mono focus:outline-none focus:border-cyan-400/50 transition cursor-pointer appearance-none"
+              {/* Sidebar Tabs */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
+                        isActive
+                          ? "bg-cyan-500/10 text-cyan-400 shadow-[inset_0_0_20px_rgba(6,182,212,0.1)] border border-cyan-500/20"
+                          : "text-slate-400 hover:bg-white/5 hover:text-slate-200 border border-transparent"
+                      }`}
                     >
-                      <option className="bg-slate-900 text-white" value="">Dynamic CSS Mesh (Default)</option>
-                      <option className="bg-slate-900 text-white" value="solid">Solid Theme Color</option>
-                      <option className="bg-slate-900 text-white" value="bg-6.mp4">Cinematic Scene (1)</option>
-                      <option className="bg-slate-900 text-white" value="bg-7.mp4">Cinematic Scene (2)</option>
-                    </select>
-                    <span className="text-[8px] text-slate-500 uppercase font-mono">
-                      Select a premium looping background video
-                    </span>
-                  </div>
+                      <Icon size={16} className={isActive ? "text-cyan-400" : "text-slate-500"} />
+                      {tab.label}
+                      {tab.id === "system" && !agentHealth.online && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse ml-auto" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                  <ToggleRow
-                    label="LAUNCH AT STARTUP"
-                    description="Start Elysia silently when Windows logs in"
-                    checked={settings.autoStart}
-                    onChange={(v) => {
-                      onChange({ autoStart: v });
-                      void fetch("/api/settings", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ autoStart: v }),
-                      }).catch(() => {});
-                    }}
-                  />
+            {/* RIGHT CONTENT PANE */}
+            <div className="flex-1 flex flex-col bg-gradient-to-br from-white/[0.01] to-transparent">
+              {/* Content Header */}
+              <div className="px-10 py-8 flex items-center justify-between border-b border-white/5">
+                <h2 className="text-2xl font-display text-white">
+                  {tabs.find(t => t.id === activeTab)?.label}
+                </h2>
+                <button
+                  onClick={onClose}
+                  className="p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 text-slate-400 transition-all cursor-pointer group"
+                >
+                  <X size={20} className="group-hover:scale-110 transition-transform" />
+                </button>
+              </div>
 
-                  <ToggleRow
-                    label="UI ANIMATIONS"
-                    description="Enable motion and orb transitions"
-                    checked={settings.animations}
-                    onChange={(v) => onChange({ animations: v })}
-                  />
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-10">
+                <div className="max-w-2xl mx-auto space-y-10">
+                  
+                  {/* ---------------- GENERAL ---------------- */}
+                  {activeTab === "general" && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      
+                      <div className="space-y-3">
+                        <label className="block text-xs font-mono tracking-widest text-cyan-400 uppercase">
+                          Cinematic Background
+                        </label>
+                        <select
+                          value={settings.backgroundVideo}
+                          onChange={(e) => onChange({ backgroundVideo: e.target.value })}
+                          className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-sm text-white focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/50 transition cursor-pointer appearance-none shadow-inner"
+                        >
+                          <option className="bg-slate-900 text-white" value="">Dynamic CSS Mesh (Default)</option>
+                          <option className="bg-slate-900 text-white" value="solid">Solid Theme Color</option>
+                          <option className="bg-slate-900 text-white" value="bg-6.mp4">Cinematic Scene (1)</option>
+                          <option className="bg-slate-900 text-white" value="bg-7.mp4">Cinematic Scene (2)</option>
+                        </select>
+                        <span className="text-[10px] text-slate-500 uppercase font-mono">
+                          Select a premium looping background video
+                        </span>
+                      </div>
 
-                  {settings.autoStart && (
-                    <div className="mt-2 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center gap-2">
-                      <Check size={14} className="text-emerald-400 shrink-0" />
-                      <span className="text-[10px] font-mono text-emerald-300/80">
-                        Elysia will auto-launch on next Windows login.
-                      </span>
+                      <div className="space-y-4">
+                        <label className="block text-xs font-mono tracking-widest text-cyan-400 uppercase">
+                          System Integration
+                        </label>
+                        <ToggleRow
+                          label="LAUNCH AT STARTUP"
+                          description="Start Elysia silently when Windows logs in"
+                          checked={settings.autoStart}
+                          onChange={(v) => {
+                            onChange({ autoStart: v });
+                            void fetch("/api/settings", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ autoStart: v }),
+                            }).catch(() => {});
+                          }}
+                        />
+                        {settings.autoStart && (
+                          <div className="mt-2 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center gap-3">
+                            <Check size={16} className="text-emerald-400 shrink-0" />
+                            <span className="text-xs font-mono text-emerald-300/80">
+                              Elysia will auto-launch on next Windows login.
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-4">
+                        <label className="block text-xs font-mono tracking-widest text-cyan-400 uppercase">
+                          Interface
+                        </label>
+                        <ToggleRow
+                          label="UI ANIMATIONS"
+                          description="Enable fluid motion and orb transitions"
+                          checked={settings.animations}
+                          onChange={(v) => onChange({ animations: v })}
+                        />
+                      </div>
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* ---------------- VOICE ---------------- */}
-              {activeTab === "voice" && (
-                <div className="space-y-4">
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
-                    Voice &amp; Microphone
-                  </div>
-
-                  {/* Voice Character Selector */}
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-mono tracking-wider text-slate-300 uppercase">
-                      Voice Character
-                    </label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {GEMINI_VOICES.map((v) => {
-                        const active = settings.voice === v.id;
-                        return (
+                  {/* ---------------- VOICE ---------------- */}
+                  {activeTab === "voice" && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      
+                      <div className="space-y-4">
+                        <label className="block text-xs font-mono tracking-widest text-cyan-400 uppercase">
+                          Avatar Presentation
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
                           <button
-                            key={v.id}
                             onClick={() => {
-                              onChange({ voice: v.id });
-                              onVoiceChange?.(v.id);
+                              onChange({ avatarStyle: "character", voice: "Aoede" });
+                              if (settings.voice !== "Aoede") onVoiceChange?.("Aoede");
                             }}
-                            className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
-                              active
-                                ? "border-cyan-400 bg-cyan-400/10"
-                                : "border-white/10 bg-white/5 hover:bg-white/10"
+                            className={`p-4 rounded-xl border-2 text-center transition-all duration-300 cursor-pointer ${
+                              settings.avatarStyle === "character"
+                                ? "border-cyan-500 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                                : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10 text-slate-400"
                             }`}
                           >
-                            <div className={`text-[10px] font-mono font-bold ${active ? "text-cyan-300" : "text-slate-300"}`}>
-                              {v.label}
+                            <div className={`text-sm font-bold uppercase mb-1 ${settings.avatarStyle === "character" ? "text-cyan-300" : ""}`}>
+                              Anime Character
                             </div>
-                            <div className="text-[8px] font-mono text-slate-500 mt-0.5">
-                              {v.desc}
-                            </div>
+                            <div className="text-[10px] font-mono opacity-60">Requires video assets</div>
                           </button>
-                        );
-                      })}
+
+                          <button
+                            onClick={() => {
+                              onChange({ avatarStyle: "orb", voice: "Charon" });
+                              if (settings.voice !== "Charon") onVoiceChange?.("Charon");
+                            }}
+                            className={`p-4 rounded-xl border-2 text-center transition-all duration-300 cursor-pointer ${
+                              settings.avatarStyle === "orb"
+                                ? "border-cyan-500 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                                : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10 text-slate-400"
+                            }`}
+                          >
+                            <div className={`text-sm font-bold uppercase mb-1 ${settings.avatarStyle === "orb" ? "text-cyan-300" : ""}`}>
+                              Dynamic Fluid Orb
+                            </div>
+                            <div className="text-[10px] font-mono opacity-60">Gemini Live Style</div>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <label className="block text-xs font-mono tracking-widest text-cyan-400 uppercase">
+                          Voice Synthesizer
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {GEMINI_VOICES.map((v) => {
+                            const active = settings.voice === v.id;
+                            return (
+                              <button
+                                key={v.id}
+                                onClick={() => {
+                                  onChange({ voice: v.id });
+                                  onVoiceChange?.(v.id);
+                                }}
+                                className={`p-4 rounded-xl border text-left transition-all duration-300 cursor-pointer ${
+                                  active
+                                    ? "border-cyan-500/50 bg-cyan-500/10 shadow-inner"
+                                    : "border-white/10 bg-white/5 hover:bg-white/10"
+                                }`}
+                              >
+                                <div className={`text-sm font-bold ${active ? "text-cyan-300" : "text-slate-200"}`}>
+                                  {v.label}
+                                </div>
+                                <div className="text-[10px] font-mono text-slate-500 mt-1">
+                                  {v.desc}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <span className="text-[10px] text-slate-500 uppercase font-mono">
+                          Note: Changing voice requires reconnecting the session
+                        </span>
+                      </div>
+
+                      <div className="space-y-4">
+                        <label className="block text-xs font-mono tracking-widest text-cyan-400 uppercase">
+                          Audio Input
+                        </label>
+                        <ToggleRow
+                          label="ALWAYS-LISTENING WAKE WORD"
+                          description="Activate the agent by saying the wake phrase"
+                          checked={settings.wakeWordEnabled}
+                          onChange={(v) => onChange({ wakeWordEnabled: v })}
+                        />
+
+                        {settings.wakeWordEnabled && (
+                          <div className="space-y-3 pt-2">
+                            <label className="block text-[10px] font-mono tracking-wider text-slate-400 uppercase">
+                              Activation Phrase
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.wakePhrase}
+                              onChange={(e) => onChange({ wakePhrase: e.target.value })}
+                              placeholder="hey elysia"
+                              className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-sm text-white font-mono focus:outline-none focus:border-cyan-400/50 transition shadow-inner"
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-3 pt-2">
+                          <label className="block text-[10px] font-mono tracking-wider text-slate-400 uppercase">
+                            Hardware Source
+                          </label>
+                          <select
+                            value={settings.micDeviceId}
+                            onChange={(e) => onChange({ micDeviceId: e.target.value })}
+                            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-sm text-white focus:outline-none focus:border-cyan-400/50 transition cursor-pointer appearance-none shadow-inner"
+                          >
+                            <option value="">System Default</option>
+                            {mics.map((m, i) => (
+                              <option key={m.deviceId || i} value={m.deviceId}>
+                                {m.label || `Microphone ${i + 1}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-[8px] text-slate-500 uppercase font-mono">
-                      Changes require reconnecting the voice session
-                    </span>
-                  </div>
+                  )}
 
-                  <ToggleRow
-                    label="WAKE WORD"
-                    description="Always-listen for the activation phrase"
-                    checked={settings.wakeWordEnabled}
-                    onChange={(v) => onChange({ wakeWordEnabled: v })}
-                  />
+                  {/* ---------------- SYSTEM ---------------- */}
+                  {activeTab === "system" && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      
+                      <div className="space-y-4">
+                        <label className="block text-xs font-mono tracking-widest text-cyan-400 uppercase">
+                          Desktop Control Agent
+                        </label>
+                        
+                        <div
+                          className={`p-6 rounded-2xl border-2 flex items-center gap-5 ${
+                            agentHealth.online
+                              ? "border-emerald-500/30 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.1)]"
+                              : "border-rose-500/30 bg-rose-500/10 shadow-[0_0_30px_rgba(244,63,94,0.1)]"
+                          }`}
+                        >
+                          <div className="relative">
+                            <div className={`w-4 h-4 rounded-full ${agentHealth.online ? "bg-emerald-400" : "bg-rose-400"}`} />
+                            {agentHealth.online && (
+                              <div className="absolute inset-0 w-4 h-4 rounded-full bg-emerald-400 animate-ping" />
+                            )}
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className={`text-lg font-bold ${agentHealth.online ? "text-emerald-300" : "text-rose-300"}`}>
+                              {agentHealth.online ? "Backend Online & Connected" : "Backend Offline"}
+                            </div>
+                            <div className="text-sm font-mono text-slate-400 mt-1">
+                              {agentHealth.online
+                                ? `Active on port 8765. ${agentHealth.toolCount ?? 0} modules loaded.`
+                                : "Please start the Python agent (uvicorn desktop_agent.main:app --port 8765)"}
+                            </div>
+                          </div>
+                          <Cpu size={32} className={agentHealth.online ? "text-emerald-400/50" : "text-rose-400/50"} />
+                        </div>
+                      </div>
 
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-mono tracking-wider text-slate-300 uppercase">
-                      Wake Phrase
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.wakePhrase}
-                      onChange={(e) => onChange({ wakePhrase: e.target.value })}
-                      placeholder="hey elysia"
-                      className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-white font-mono focus:outline-none focus:border-cyan-400/50 transition"
-                    />
-                    <span className="text-[8px] text-slate-500 uppercase font-mono">
-                      Say this phrase to activate Elysia
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-mono tracking-wider text-slate-300 uppercase">
-                      Microphone
-                    </label>
-                    <select
-                      value={settings.micDeviceId}
-                      onChange={(e) => onChange({ micDeviceId: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-white font-mono focus:outline-none focus:border-cyan-400/50 transition cursor-pointer"
-                    >
-                      <option value="">System Default</option>
-                      {mics.map((m, i) => (
-                        <option key={m.deviceId || i} value={m.deviceId}>
-                          {m.label || `Microphone ${i + 1}`}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="text-[8px] text-slate-500 uppercase font-mono">
-                      {mics.length === 0
-                        ? "Grant mic permission to list devices"
-                        : `${mics.length} device(s) detected`}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-[10px] font-mono tracking-wider text-slate-300 uppercase">
-                        Sensitivity
-                      </label>
-                      <span className="text-[10px] font-mono text-cyan-300">
-                        {settings.sensitivity}
-                      </span>
+                      <div className="space-y-4">
+                        <label className="block text-xs font-mono tracking-widest text-cyan-400 uppercase">
+                          Authorized Capabilities
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {[
+                            "App Automation", "Chrome CDP", "System Volume", "Brightness Control",
+                            "Power Actions", "File System", "Screen Vision", "Clipboard Access"
+                          ].map((cap, i) => (
+                            <div key={i} className="p-3 rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-center text-center gap-2 text-[10px] font-mono text-slate-300">
+                              <Check size={12} className="text-cyan-500" />
+                              {cap}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={settings.sensitivity}
-                      onChange={(e) => onChange({ sensitivity: Number(e.target.value) })}
-                      className="w-full accent-cyan-500 cursor-pointer"
-                    />
-                    <span className="text-[8px] text-slate-500 uppercase font-mono">
-                      Higher = faster re-arm &amp; more matches
-                    </span>
-                  </div>
+                  )}
+
+                  {/* ---------------- ABOUT ---------------- */}
+                  {activeTab === "about" && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      
+                      <div className="flex flex-col items-center justify-center p-10 text-center">
+                        <div className="w-24 h-24 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(6,182,212,0.2)]">
+                          <Sparkles size={40} className="text-cyan-400" />
+                        </div>
+                        <h1 className="text-3xl font-display text-white mb-2">
+                          {settings.avatarStyle === "orb" ? "Aegis Core" : "Elysia Core"}
+                        </h1>
+                        <p className="text-sm font-mono text-slate-400 max-w-md">
+                          Next-generation multimodal AI assistant engineered for deep desktop integration and organic conversation.
+                        </p>
+                      </div>
+
+                      <div className="p-6 rounded-2xl border border-white/10 bg-white/[0.02] shadow-inner">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                          <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Version</span>
+                            <span className="text-sm font-bold text-slate-200">2.0.0 (Premium)</span>
+                          </div>
+                          <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Core Engine</span>
+                            <span className="text-sm font-bold text-cyan-300">Gemini Live API</span>
+                          </div>
+                          <div className="flex justify-between items-center border-b border-white/5 pb-4 md:border-0 md:pb-0">
+                            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Backend</span>
+                            <span className="text-sm font-bold text-slate-200">FastAPI</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Frontend</span>
+                            <span className="text-sm font-bold text-slate-200">React + Vite + Tailwind</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-5 rounded-2xl border border-amber-500/20 bg-amber-500/10 flex items-start gap-4">
+                        <AlertTriangle size={20} className="text-amber-400 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-bold text-amber-300">Microphone Required</h4>
+                          <p className="text-xs font-mono text-amber-300/70 leading-relaxed">
+                            Keep this application tab active for continuous wake-word detection. Hardware microphone access must be granted in your browser.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
-              )}
-
-              {/* ---------------- SYSTEM ---------------- */}
-              {activeTab === "system" && (
-                <div className="space-y-4">
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
-                    Desktop Control Agent
-                  </div>
-
-                  <div
-                    className={`p-4 rounded-xl border flex items-center gap-3 ${
-                      agentHealth.online
-                        ? "border-emerald-500/20 bg-emerald-500/5"
-                        : "border-rose-500/20 bg-rose-500/5"
-                    }`}
-                  >
-                    <div
-                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                        agentHealth.online ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
-                      }`}
-                    />
-                    <div className="flex-1">
-                      <div className="text-xs font-mono text-white">
-                        {agentHealth.online ? "Agent Online" : "Agent Offline"}
-                      </div>
-                      <div className="text-[10px] font-mono text-slate-400">
-                        {agentHealth.online
-                          ? `${agentHealth.toolCount ?? 0} tools registered`
-                          : "Start the Python agent on port 8765"}
-                      </div>
-                    </div>
-                    <Cpu size={16} className="text-slate-500" />
-                  </div>
-
-                  <div className="p-3 rounded-xl border border-white/10 bg-white/[0.03] space-y-2 shadow-inner">
-                    <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                      <Volume2 size={12} /> Capabilities
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono text-slate-300">
-                      <span>✓ App control</span>
-                      <span>✓ Browser</span>
-                      <span>✓ Volume</span>
-                      <span>✓ Brightness</span>
-                      <span>✓ Power</span>
-                      <span>✓ Files</span>
-                      <span>✓ Screenshot</span>
-                      <span>✓ Clipboard</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ---------------- ABOUT ---------------- */}
-              {activeTab === "about" && (
-                <div className="space-y-4">
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
-                    About Elysia
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-white/10 bg-white/[0.03] space-y-3 shadow-inner">
-                    <div className="flex items-center gap-2">
-                      <Info size={14} className="text-cyan-400" />
-                      <span className="text-sm font-display text-white">ELYSIA AI Assistant</span>
-                    </div>
-                    <div className="space-y-1.5 text-[10px] font-mono text-slate-400">
-                      <div className="flex justify-between">
-                        <span>VERSION</span>
-                        <span className="text-slate-300">V2.0.0</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>ENGINE</span>
-                        <span className="text-slate-300">Gemini Live</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>DESKTOP</span>
-                        <span className="text-slate-300">FastAPI Agent</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>WAKE WORD</span>
-                        <span className="text-slate-300">Web Speech API</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-xl border border-amber-500/15 bg-amber-500/5 flex items-start gap-2">
-                    <AlertTriangle size={12} className="text-amber-400 shrink-0 mt-0.5" />
-                    <span className="text-[10px] font-mono text-amber-300/70 leading-relaxed">
-                      Keep this tab active for wake-word detection. Microphone access
-                      is required for voice activation.
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer status bar */}
-            <div className="px-6 py-4 border-t border-gray-100 bg-zinc-50 flex items-center justify-between">
-              <span className="text-[11px] font-sans text-zinc-500">
-                Preferences auto-save
-              </span>
-              <span className="text-[11px] font-sans font-medium text-zinc-400">
-                Elysia V2
-              </span>
+              </div>
             </div>
           </motion.div>
         </>

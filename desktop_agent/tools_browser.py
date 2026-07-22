@@ -109,30 +109,36 @@ async def _ensure_browser_cdp_async() -> Any:
                 chrome_exe = chrome if os.path.exists(chrome) else _shutil.which(chrome)
                 import subprocess as _sp
                 _sp.Popen(
-                    [chrome_exe, "--remote-debugging-port=9222",
-                     f"--user-data-dir={os.path.expanduser('~')}/.elysia_chrome_cdp"],
+                    [chrome_exe, "--remote-debugging-port=9222"],
                     close_fds=True if _sys.platform != "win32" else False,
                     start_new_session=True if _sys.platform != "win32" else False,
                     creationflags=_sp.CREATE_NEW_PROCESS_GROUP | _sp.DETACHED_PROCESS if _sys.platform == "win32" else 0,
                     stdout=_sp.DEVNULL, stderr=_sp.DEVNULL
                 )
-                await asyncio.sleep(3)
+
+                # Poll until CDP port is responsive (up to 15 seconds)
+                import urllib.request
+                for _ in range(15):
+                    try:
+                        urllib.request.urlopen(cdp_url.replace("ws://", "http://").replace("wss://", "https://") + "/json/version", timeout=1)
+                        break
+                    except Exception:
+                        await asyncio.sleep(1)
+
                 try:
                     STATE.browser = await STATE.playwright.chromium.connect_over_cdp(cdp_url)
                 except Exception:
                     pass
             if STATE.browser is None:
-                log.warning(
-                    "CDP mode: Could not connect to Chrome on port 9222. "
-                    "To use your own Chrome profile, close all Chrome windows first, then run:\n"
-                    "  google-chrome-stable --remote-debugging-port=9222\n"
-                    "Falling back to managed browser mode."
+                raise ToolError(
+                    "CDP_UNAVAILABLE: Could not connect to Chrome because it is already open normally. "
+                    "You must ask the user: 'Your Chrome is already open. Can I close it to enable full automation, or should I open a temporary testing browser instead?' "
+                    "If they say to close it, use osCommand to run `taskkill /F /IM chrome.exe /T` (on Windows) or `pkill chrome` (Linux/Mac) and try your browser action again. "
+                    "If they say to use the testing browser, call `desktopBrowserSetMode` with `mode: 'managed'`, then try your browser action again."
                 )
-                return await _ensure_browser_managed_async()
         STATE.context = STATE.browser.contexts[0] if STATE.browser.contexts else None
         if STATE.context is None:
-            log.warning("No browser context via CDP. Falling back to managed mode.")
-            return await _ensure_browser_managed_async()
+            raise ToolError("No browser context found in Chrome.")
 
     pages = STATE.context.pages
     if pages:
@@ -358,7 +364,18 @@ async def browser_type(args: Dict[str, Any]) -> Dict[str, Any]:
     page = await _page()
     try:
         if selector:
-            await page.fill(selector, str(text), timeout=5000)
+            try:
+                await page.fill(selector, str(text), timeout=5000)
+            except Exception:
+                # Fallback for complex editors (Monaco/CodeMirror) that reject fill
+                await page.click(selector, timeout=3000, force=True)
+                if clear_first:
+                    await page.keyboard.press("Control+a")
+                    await page.keyboard.press("Backspace")
+                # Use clipboard to prevent auto-indent issues in Monaco
+                import pyperclip
+                pyperclip.copy(str(text))
+                await page.keyboard.press("Control+v")
         else:
             if clear_first:
                 # Try to clear active element robustly
@@ -368,9 +385,10 @@ async def browser_type(args: Dict[str, Any]) -> Dict[str, Any]:
                     }
                 }''')
                 await page.keyboard.press("Control+a")
-                await page.keyboard.press("Delete")
                 await page.keyboard.press("Backspace")
-            await page.keyboard.type(str(text))
+            import pyperclip
+            pyperclip.copy(str(text))
+            await page.keyboard.press("Control+v")
     except Exception as e:  # noqa: BLE001
         raise ToolError(f"Type failed: {e}")
     return {"result": f"Typed {len(str(text))} characters."}
@@ -541,17 +559,43 @@ def shutdown_browser() -> None:
         STATE.reset_playwright()
 
 
+@register("desktopBrowserSetMode")
+async def browser_set_mode(args: Dict[str, Any]) -> Dict[str, Any]:
+    mode = (args.get("mode") or "cdp").strip().lower()
+    if mode not in ["cdp", "managed"]:
+        raise ToolError("Invalid mode. Use 'cdp' or 'managed'.")
+    os.environ["ELYSIA_BROWSER_MODE"] = mode
+    
+    # Close existing browser connections to force a fresh restart with the new mode
+    if STATE.browser:
+        try:
+            await STATE.browser.close()
+        except Exception:
+            pass
+        STATE.browser = None
+    STATE.context = None
+    STATE.page = None
+    
+    return {"result": f"Browser mode changed to '{mode}'. Next browser action will launch with this configuration."}
+
+
 __all__ = [
     "browser_open",
     "browser_navigate",
     "browser_open_tab",
     "browser_close_tab",
+    "browser_tab_action",
     "browser_search",
+    "browser_read",
+    "browser_get_html",
     "browser_click",
     "browser_type",
-    "browser_fill_form",
+    "browser_select",
+    "browser_hover",
+    "browser_evaluate",
     "browser_go_back",
     "browser_go_forward",
     "browser_scroll",
     "shutdown_browser",
+    "browser_set_mode",
 ]

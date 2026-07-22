@@ -475,7 +475,7 @@ export default function App() {
     if (!sessionRef.current) return;
 
     if (state === "disconnected") {
-      await sessionRef.current.connect(settings.voice);
+      await sessionRef.current.connect(settings.voice, settings.avatarStyle);
     } else {
       sessionRef.current.disconnect();
     }
@@ -530,6 +530,7 @@ export default function App() {
           activeEmotion={activeEmotion}
           characterState={characterState}
           backgroundVideo={settings.backgroundVideo}
+          avatarStyle={settings.avatarStyle}
         />
       </div>
 
