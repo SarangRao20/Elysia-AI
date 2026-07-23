@@ -514,10 +514,10 @@ cp .env.local .env
 
 ## How This Was Built
 
-Originally scaffolded from a **Google AI Studio** export. Heavily expanded into a full desktop automation platform with:
+Built from scratch by **Sarang (SarangRao20)** — an independent developer focused on AI-powered desktop automation. Features:
 - Holographic video character system + orb animation mode
 - Persistent memory with AI-powered extraction
-- Cross-platform desktop agent with 81 tools across 19 modules
+- Cross-platform desktop agent with 88 tools across 22 modules
 - Dual browser automation (CDP + managed modes)
 - In-app Playwright browser with media controls
 - Wake word detection ("Hey Elysia")

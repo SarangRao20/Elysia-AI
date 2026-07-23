@@ -512,6 +512,12 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
                           </p>
                         </div>
                       </div>
+
+                      <div className="text-center pt-4 pb-2">
+                        <p className="text-[10px] font-mono text-slate-500 tracking-wider">
+                          Built by <span className="text-slate-400">Sarang</span> &middot; 2024&ndash;2026
+                        </p>
+                      </div>
                     </div>
                   )}
 
