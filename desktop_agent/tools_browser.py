@@ -63,7 +63,7 @@ def _run(coro):
 
 def _browser_mode() -> str:
     """Return 'cdp' or 'managed' based on ELYSIA_BROWSER_MODE env var."""
-    return os.environ.get("ELYSIA_BROWSER_MODE", "cdp").strip().lower()
+    return os.environ.get("ELYSIA_BROWSER_MODE", "managed").strip().lower()
 
 
 async def _ensure_browser_cdp_async() -> Any:
@@ -97,6 +97,8 @@ async def _ensure_browser_cdp_async() -> Any:
             log.warning("CDP connect failed (%s). Auto-launching Chrome with --remote-debugging-port=9222...", e)
             import shutil as _shutil
             import sys as _sys
+            import tempfile as _tempfile
+            import uuid as _uuid
             chrome_paths = ["google-chrome-stable", "google-chrome", "chromium", "chromium-browser", "chrome"]
             if _sys.platform == "win32":
                 chrome_paths.extend([
@@ -108,8 +110,11 @@ async def _ensure_browser_cdp_async() -> Any:
             if chrome:
                 chrome_exe = chrome if os.path.exists(chrome) else _shutil.which(chrome)
                 import subprocess as _sp
+                # Use a temp user-data-dir so Chrome launches a fresh instance
+                # (otherwise an already-running Chrome reuses its own profile and ignores the debug port)
+                _tmpdir = os.path.join(_tempfile.gettempdir(), f"elysia-cdp-{_uuid.uuid4().hex[:8]}")
                 _sp.Popen(
-                    [chrome_exe, "--remote-debugging-port=9222"],
+                    [chrome_exe, f"--user-data-dir={_tmpdir}", "--remote-debugging-port=9222", "--no-first-run"],
                     close_fds=True if _sys.platform != "win32" else False,
                     start_new_session=True if _sys.platform != "win32" else False,
                     creationflags=_sp.CREATE_NEW_PROCESS_GROUP | _sp.DETACHED_PROCESS if _sys.platform == "win32" else 0,
@@ -131,10 +136,11 @@ async def _ensure_browser_cdp_async() -> Any:
                     pass
             if STATE.browser is None:
                 raise ToolError(
-                    "CDP_UNAVAILABLE: Could not connect to Chrome because it is already open normally. "
-                    "You must ask the user: 'Your Chrome is already open. Can I close it to enable full automation, or should I open a temporary testing browser instead?' "
-                    "If they say to close it, use osCommand to run `taskkill /F /IM chrome.exe /T` (on Windows) or `pkill chrome` (Linux/Mac) and try your browser action again. "
-                    "If they say to use the testing browser, call `desktopBrowserSetMode` with `mode: 'managed'`, then try your browser action again."
+                    "CDP_UNAVAILABLE: Could not connect to Chrome via CDP. "
+                    "Your Chrome is already open without remote debugging enabled. "
+                    "Switch to managed mode by telling the user: 'Browser mode is currently CDP, "
+                    "but Chrome is not in debug mode. I'll use managed mode instead.' "
+                    "Then call desktopBrowserSetMode with mode='managed' and retry the browser action."
                 )
         STATE.context = STATE.browser.contexts[0] if STATE.browser.contexts else None
         if STATE.context is None:
@@ -504,31 +510,6 @@ def _sync_wrap(async_fn):
     return wrapper
 
 
-# Re-register the async handlers as synchronous wrappers so the registry
-# dispatcher (which is sync) can call them uniformly.
-from .registry import TOOLS  # noqa: E402
-
-for _name in [
-    "desktopBrowserOpen",
-    "desktopBrowserNavigate",
-    "desktopBrowserOpenTab",
-    "desktopBrowserCloseTab",
-    "desktopBrowserSearch",
-    "desktopBrowserClick",
-    "desktopBrowserType",
-    "desktopBrowserFillForm",
-    "desktopBrowserGoBack",
-    "desktopBrowserGoForward",
-    "desktopBrowserScroll",
-    "desktopBrowserReadText",
-    "desktopBrowserGetLinks",
-    "browserTabAction",
-]:
-    _orig = TOOLS[_name]
-    if asyncio.iscoroutinefunction(_orig):
-        TOOLS[_name] = _sync_wrap(_orig)
-
-
 def shutdown_browser() -> None:
     """Cleanly stop the Playwright browser (called on app shutdown).
 
@@ -565,8 +546,7 @@ async def browser_set_mode(args: Dict[str, Any]) -> Dict[str, Any]:
     if mode not in ["cdp", "managed"]:
         raise ToolError("Invalid mode. Use 'cdp' or 'managed'.")
     os.environ["ELYSIA_BROWSER_MODE"] = mode
-    
-    # Close existing browser connections to force a fresh restart with the new mode
+
     if STATE.browser:
         try:
             await STATE.browser.close()
@@ -575,8 +555,52 @@ async def browser_set_mode(args: Dict[str, Any]) -> Dict[str, Any]:
         STATE.browser = None
     STATE.context = None
     STATE.page = None
-    
+
     return {"result": f"Browser mode changed to '{mode}'. Next browser action will launch with this configuration."}
+
+
+@register("browserMediaControl")
+async def browser_media_control(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Control media playback in the browser (YouTube, etc.) via keyboard shortcuts."""
+    action = (args.get("action") or "").strip().lower()
+    value = args.get("value")
+
+    page = await _ensure_browser_async()
+
+    shortcuts = {
+        "play": "k",
+        "pause": "k",
+        "mute": "m",
+        "unmute": "m",
+        "fullscreen": "f",
+        "exit_fullscreen": "f",
+        "skip": "l",
+        "rewind": "j",
+    }
+
+    if action == "volume":
+        if value is None:
+            raise ToolError("'value' (0-100) is required for volume action.")
+        target = max(0, min(100, int(value)))
+        current_estimate = 50
+        diff = target - current_estimate
+        key = "ArrowUp" if diff > 0 else "ArrowDown"
+        presses = min(abs(diff) // 5 + 1, 20)
+        if presses == 0:
+            return {"result": f"Volume already at {target}%."}
+        for _ in range(presses):
+            await page.keyboard.press(key)
+            await asyncio.sleep(0.05)
+        return {"result": f"Adjusted YouTube volume toward {target}% (pressed {key} {presses}x)."}
+
+    elif action in shortcuts:
+        await page.keyboard.press(shortcuts[action])
+        label = {"play": "Play", "pause": "Pause", "mute": "Muted", "unmute": "Unmuted",
+                 "fullscreen": "Fullscreen toggled", "exit_fullscreen": "Fullscreen toggled",
+                 "skip": "Skipped forward 10s", "rewind": "Rewound 10s"}.get(action, action)
+        return {"result": f"{label} via keyboard shortcut."}
+    else:
+        raise ToolError(f"Unknown action '{action}'. Valid: play, pause, volume, mute, unmute, fullscreen, exit_fullscreen, skip, rewind.")
 
 
 __all__ = [
@@ -586,16 +610,43 @@ __all__ = [
     "browser_close_tab",
     "browser_tab_action",
     "browser_search",
-    "browser_read",
-    "browser_get_html",
     "browser_click",
     "browser_type",
-    "browser_select",
-    "browser_hover",
-    "browser_evaluate",
+    "browser_fill_form",
     "browser_go_back",
     "browser_go_forward",
     "browser_scroll",
+    "browser_read_text",
+    "browser_get_links",
     "shutdown_browser",
     "browser_set_mode",
+    "browser_media_control",
 ]
+
+
+# Re-register the async handlers as synchronous wrappers so the registry
+# dispatcher (which is sync) can call them uniformly.
+# This MUST run after all @register decorators have executed.
+from .registry import TOOLS  # noqa: E402
+
+for _name in [
+    "desktopBrowserOpen",
+    "desktopBrowserNavigate",
+    "desktopBrowserOpenTab",
+    "desktopBrowserCloseTab",
+    "desktopBrowserSearch",
+    "desktopBrowserClick",
+    "desktopBrowserType",
+    "desktopBrowserFillForm",
+    "desktopBrowserGoBack",
+    "desktopBrowserGoForward",
+    "desktopBrowserScroll",
+    "desktopBrowserReadText",
+    "desktopBrowserGetLinks",
+    "browserTabAction",
+    "desktopBrowserSetMode",
+    "browserMediaControl",
+]:
+    _orig = TOOLS[_name]
+    if asyncio.iscoroutinefunction(_orig):
+        TOOLS[_name] = _sync_wrap(_orig)

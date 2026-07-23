@@ -450,7 +450,7 @@ export const ElysiaCoreVisualizer: React.FC<ElysiaCoreVisualizerProps> = ({
           ) : (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <img 
-                src={characterState === "idle" ? "/assets/download_static.png" : "/assets/download.gif"}
+                src="/assets/orb2.gif"
                 alt="Aegis Core" 
                 className={`transition-all duration-700 ease-in-out object-contain w-full h-full ${
                   characterState === "idle" ? "scale-90 opacity-90" :

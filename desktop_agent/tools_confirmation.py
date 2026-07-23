@@ -76,15 +76,29 @@ def request_power_action(args: Dict[str, Any]) -> Dict[str, Any]:
 
 @register("requestTerminalAction")
 def request_terminal_action(args: Dict[str, Any]) -> Dict[str, Any]:
-    """Mint a confirmation token for a dangerous terminal command.
-    
+    """Mint a confirmation token for a terminal command.
+
     ELYSIA calls this first; the returned message instructs her to ask the
     user out loud to confirm the command.
+
+    Blacklisted commands are rejected immediately without asking the user.
     """
     command = args.get("command") or args.get("package")
     if not command:
         raise ToolError("You must specify the 'command' or 'package' to request confirmation.")
-        
+
+    # Reject blacklisted commands immediately — never ask user for confirmation
+    # on something we will block anyway
+    from .tools_terminal import _is_blacklisted
+    if _is_blacklisted(command):
+        handler_name = "runTerminalCommand" if "command" in args else "installPackage"
+        raise ToolError(
+            f"Command `{command}` is blocked by the security blacklist. "
+            f"Do NOT ask the user for confirmation. "
+            f"Tell them this command is not allowed for safety reasons and "
+            f"suggest an alternative. Do NOT call {handler_name}."
+        )
+
     _purge_expired()
     token = secrets.token_urlsafe(6)
     STATE.confirmations[token] = {
@@ -92,7 +106,7 @@ def request_terminal_action(args: Dict[str, Any]) -> Dict[str, Any]:
         "command": command,
         "expires": time.time() + TOKEN_TTL_SECONDS,
     }
-    
+
     return {
         "requires_confirmation": True,
         "token": token,

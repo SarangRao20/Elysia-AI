@@ -83,6 +83,7 @@ const DESKTOP_TOOLS: ReadonlySet<string> = new Set([
   "desktopBrowserType", "desktopBrowserFillForm", "desktopBrowserGoBack",
   "desktopBrowserGoForward", "desktopBrowserScroll",
   "desktopBrowserReadText", "desktopBrowserGetLinks",
+  "desktopBrowserSetMode", "browserMediaControl",
   // coding assistance
   "createPythonFile", "runPythonScript", "createProjectFolder", "writeCodeFile",
   // system information
