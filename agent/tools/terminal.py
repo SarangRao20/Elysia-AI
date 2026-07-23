@@ -1,10 +1,3 @@
-"""
-Terminal control: run shell commands and install packages natively.
-
-Uses the OS backend for platform-independent shell execution. Includes a blacklist
-of dangerous commands to prevent accidental system damage.
-"""
-
 from __future__ import annotations
 
 import os
@@ -17,40 +10,34 @@ from typing import Any, Dict
 from ..registry import STATE, ToolError, register
 from ..backends import get_backend
 
-# Destructive command patterns that are always blocked.
-# Only genuinely dangerous operations are listed here.
-# Destructive command patterns that are always blocked.
 DANGEROUS_COMMAND_PATTERNS: list[str] = [
-    # Destructive deletion
     "rm -rf /", "rm -rf --no-preserve-root", "rm -rf /*", "rm -rf ~", "rmdir /s",
     "del /s", "del /f /s /q", "del *",
-    # Format/destroy storage
     "mkfs.", "dd if=", "dd of=", "format c:", "diskpart",
-    # Fork bomb
     ":(){ :|:& };:",
-    # Direct disk writes
     "> /dev/sda", "> /dev/sdb", "> /dev/nvme",
-    # Wipe
     "wipefs", "blkdiscard",
-    # Moving root
     "mv /* ", "mv / ",
-    # Crypto miner / malware download patterns
-    "| sh", "| bash",  # piping to shell
-    "eval ",  # dangerous eval
-    # chmod -R on root
+    "| sh", "| bash",
+    "eval ",
     "chmod -R 777 /", "chmod -R 777 /*",
-    # System directory modifications on Windows
     "C:\\Windows", "C:\\Program Files", "C:\\ProgramData",
 ]
 
 
 def _is_blacklisted(command: str) -> bool:
-    """Check if a command contains any dangerous pattern."""
     normalized = command.strip().lower()
     for pattern in DANGEROUS_COMMAND_PATTERNS:
         if pattern in normalized:
             return True
     return False
+
+
+def _detect_package_manager() -> str:
+    for mgr in ["pacman", "apt-get", "dnf", "zypper", "brew", "port"]:
+        if subprocess.run(["which", mgr], capture_output=True).returncode == 0:
+            return mgr
+    return "apt-get"
 
 
 @register("runTerminalCommand")
@@ -59,15 +46,12 @@ def run_terminal_command(args: Dict[str, Any]) -> Dict[str, Any]:
     if not command:
         raise ToolError("Parameter 'command' is required.")
 
-    # Block dangerous commands even if they have confirmation
     if _is_blacklisted(command):
         raise ToolError(
             f"This command is not allowed for security reasons. "
-            f"Dangerous commands like '{command}' are blocked to protect your system. "
-            f"Please use a safer alternative or contact the user who has admin access."
+            f"Dangerous commands like '{command}' are blocked to protect your system."
         )
 
-    # Interactive sudo flow: if command starts with sudo, ask for password
     stripped = command.strip()
     if stripped.startswith("sudo "):
         cmd_id = str(uuid.uuid4())
@@ -87,11 +71,6 @@ def run_terminal_command(args: Dict[str, Any]) -> Dict[str, Any]:
 
 @register("provideSudoPassword")
 def provide_sudo_password(args: Dict[str, Any]) -> Dict[str, Any]:
-    """Provide the sudo password for a command that requires elevation.
-
-    Call this after runTerminalCommand returns needs_sudo=true.
-    The password is used once and discarded.
-    """
     cmd_id = args.get("command_id")
     password = args.get("password")
     if not cmd_id or not password:
@@ -125,10 +104,6 @@ def provide_sudo_password(args: Dict[str, Any]) -> Dict[str, Any]:
 
 @register("isCommandAllowed")
 def is_command_allowed(args: Dict[str, Any]) -> Dict[str, Any]:
-    """Check whether a command would be allowed by the terminal blacklist.
-
-    This is useful when asking ELYSIA to help you validate a command before running.
-    """
     command = args.get("command")
     if not command:
         raise ToolError("Parameter 'command' is required.")
@@ -156,13 +131,9 @@ def install_package(args: Dict[str, Any]) -> Dict[str, Any]:
     if not package:
         raise ToolError("Parameter 'package' is required.")
 
-    # Check package installation safety
-    if _is_blacklisted(f"pacman -S {package}"):
-        raise ToolError(
-            f"Package installation of '{package}' is blocked for security. "
-            f"To prevent system breakage, use 'pacman -S --noconfirm {package}' instead. "
-            f"Ask the user to run it manually or request package removal (muon)."
-        )
+    pkg_mgr = _detect_package_manager()
+    if _is_blacklisted(f"{pkg_mgr} -S {package}"):
+        raise ToolError(f"Package installation of '{package}' is blocked for security.")
 
     result = get_backend().terminal.install_package(package)
     return {"result": f"Attempted to install package: {package}", "output": result}

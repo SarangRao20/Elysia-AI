@@ -1,4 +1,5 @@
 import platform
+import os as _os
 from .base import OSBackend
 
 _backend_instance = None
@@ -10,9 +11,11 @@ def get_backend() -> OSBackend:
 
     sys = platform.system()
     if sys == "Linux":
-        import os
-        desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+        desktop = _os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
         if "gnome" in desktop:
+            from .linux_gnome import LinuxGnomeBackend
+            _backend_instance = LinuxGnomeBackend()
+        elif "kde" in desktop or "plasma" in desktop:
             from .linux_gnome import LinuxGnomeBackend
             _backend_instance = LinuxGnomeBackend()
         else:
@@ -21,10 +24,11 @@ def get_backend() -> OSBackend:
     elif sys == "Windows":
         from .windows import WindowsBackend
         _backend_instance = WindowsBackend()
+    elif sys == "Darwin":
+        from .macos import MacBackend
+        _backend_instance = MacBackend()
     else:
-        # Fallback to a dummy or error throwing backend for unsupported OS,
-        # but for now, we'll try to use WindowsBackend and let things fail gracefully.
-        from .windows import WindowsBackend
-        _backend_instance = WindowsBackend()
+        from .linux_gnome import LinuxGnomeBackend
+        _backend_instance = LinuxGnomeBackend()
 
     return _backend_instance
