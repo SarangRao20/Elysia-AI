@@ -55,7 +55,7 @@ ELYSIA runs as **3 separate processes** that communicate over HTTP/WebSocket:
 | Process | Port | Runtime | Role |
 |---|---|---|---|---|
 | **Node.js Server** | 3000 | Express + WebSocket | Orchestrator. Bridges browser to Gemini Live API. Handles function calling, memory CRUD, reminders, settings, API key storage. |
-| **Python Desktop Agent** | 8765 | FastAPI + Playwright | OS-level tool execution. 81 tools across 19 modules. Receives `POST /execute { tool, args }` dispatches. Manages browser (CDP/managed modes), screenshots, clipboard, files, power, terminal, Hyprland workspaces, weather, news, coding, conversation export. |
+| **Python Desktop Agent** | 8765 | FastAPI + Playwright | OS-level tool execution. 88 tools across 22 modules. Receives `POST /execute { tool, args }` dispatches. Manages browser (CDP/managed modes), screenshots, clipboard, files, power, terminal, Hyprland workspaces, weather, news, coding, conversation export, Google Calendar/Gmail/Tasks, OS input simulation. |
 | **Vite React Frontend** | 3000 (served) | React 19 + Tailwind CSS v4 | Holographic UI with canvas visualizer, video character or orb animation, settings panel, memory dashboard, transcript, browser agent, text chat fallback, sudo popup. |
 
 ---
@@ -154,38 +154,40 @@ elysia-ai-assistant/
 │
 └── agent/                    # Python agent (FastAPI + Playwright)
     ├── __init__.py
-    ├── main.py                 # FastAPI app setup, tool registry, /execute dispatcher
-    ├── registry.py             # Tool registration system
-    ├── requirements.txt        # Python dependencies
-    ├── README.md               # Desktop agent documentation
+    ├── server.py              # FastAPI app setup, tool registry, /execute dispatcher
+    ├── registry.py            # Tool registration system
+    ├── requirements.txt       # Python dependencies
+    ├── README.md              # Desktop agent documentation
     │
     ├── backends/
     │   ├── __init__.py
-    │   ├── base.py             # Abstract backend interfaces
-    │   ├── factory.py          # OS detection + backend factory
-    │   ├── windows.py          # Windows backend (Win32 API)
-    │   └── linux_wayland.py    # Linux/Wayland backend (Hyprland)
+    │   ├── base.py            # Abstract backend interfaces
+    │   ├── factory.py         # OS detection + backend instantiation
+    │   ├── windows.py         # Windows backend (Win32 API)
+    │   └── linux_wayland.py   # Linux/Wayland backend (Hyprland)
     │
-    └── tools/
-        ├── tools_applications.py   # openApplication, closeApplication (15+ apps)
-        ├── tools_browser.py        # desktopBrowser* (16 tools, CDP/managed modes)
-        ├── tools_clipboard.py      # copy/paste/get/clear clipboard
-        ├── tools_coding.py         # createPythonFile, writeCodeFile, runPythonScript
-        ├── tools_confirmation.py   # requestPowerAction, requestTerminalAction (2-step token)
-        ├── tools_conversation.py   # exportConversation, listExports (save chat history)
-        ├── tools_files.py          # create/read/rename/delete/move/open/list/search files
-        ├── tools_hyprland.py       # switchWorkspace, listWorkspaces (Hyprland/Wayland only)
-        ├── tools_iitm.py           # IITM BS Degree portal quick links
-        ├── tools_news.py           # getNews (6 categories via Google News RSS)
-        ├── tools_pc.py             # volume/brightness/power/shutdown controls
-        ├── tools_screenshot.py     # take/save/analyze screenshots, readScreen (OCR)
-        ├── tools_search.py         # searchWeb, searchYouTube, searchGoogle, searchGitHub
-        ├── tools_startup.py        # enable/disable auto-start (Windows registry)
-        ├── tools_system.py         # systemInfo, gpuInfo, temperatureInfo
-        ├── tools_terminal.py       # runTerminalCommand (with command blacklist + sudo)
-        ├── tools_weather.py        # getWeather (via wttr.in)
-        ├── tools_websites.py       # openWebsite (25+ named shortcuts)
-        └── tools_windows.py        # minimize/maximize/close/switch windows
+    └── tools/                 # 22 tool modules
+        ├── applications.py   # openApplication, closeApplication (15+ apps)
+        ├── browser.py        # desktopBrowser* (16 tools, CDP/managed modes)
+        ├── clipboard.py      # copy/paste/get/clear clipboard
+        ├── coding.py         # createPythonFile, writeCodeFile, runPythonScript
+        ├── confirmation.py   # requestPowerAction, requestTerminalAction (2-step token + blacklist)
+        ├── conversation.py   # exportConversation, listExports (save chat history)
+        ├── files.py          # create/read/rename/delete/move/open/list/search files
+        ├── google.py         # getCalendarEvents, createCalendarEvent, sendEmail, getEmails, getTasks, createTask
+        ├── hyprland.py       # switchWorkspace, listWorkspaces (Hyprland/Wayland only)
+        ├── iitm.py           # IITM BS Degree portal quick links
+        ├── news.py           # getNews (6 categories via Google News RSS)
+        ├── os_input.py       # osType, osPress, osClick (keyboard/mouse simulation)
+        ├── pc.py             # volume/brightness/power/shutdown controls
+        ├── screenshot.py     # take/save/analyze screenshots, readScreen (OCR)
+        ├── search.py         # searchWeb, searchYouTube, searchGoogle, searchGitHub
+        ├── startup.py        # enable/disable auto-start (Windows registry)
+        ├── system.py         # systemInfo, gpuInfo, temperatureInfo
+        ├── terminal.py       # runTerminalCommand (with command blacklist + sudo)
+        ├── weather.py        # getWeather (via wttr.in)
+        ├── websites.py       # openWebsite (25+ named shortcuts)
+        └── windows.py        # minimize/maximize/close/switch windows
 ```
 
 ---
@@ -204,10 +206,10 @@ elysia-ai-assistant/
 - When detected, the visualizer transitions to listening state and captures speech
 
 ### Function Calling
-- Gemini can invoke 80+ server-side tools during conversation across 19 modules
+- Gemini can invoke ~90 server-side tools during conversation across 22 modules
 - Tools are dispatched via `POST /execute` to the Python Desktop Agent (port 8765)
 - Terminal commands and power actions use a **two-step token confirmation** system
-- Blacklisted commands (`rm -rf`, `:(){:|:&};:`, etc.) are blocked at the token generation step — the AI never asks the user to confirm
+- Blacklisted commands (`rm -rf`, `:(){:|:&};:`, etc.) are blocked at the token generation step — the AI **never** asks the user to confirm
 - File operations are confined to safe directories (Home, Desktop, Documents, etc.)
 - Browser automation supports two modes:
   - **Managed mode** (default): Playwright launches its own headed Chromium — works out of the box
@@ -232,7 +234,7 @@ ELYSIA uses **no traditional database**. All data is stored as JSON files in the
 | `settings.json` | User preferences (voice, wake word, sensitivity, theme, volumes) |
 | `memories.json` | Persistent memory store with categories |
 | `reminders.json` | Timer-based reminders |
-| `metadata.json` | AI Studio export metadata |
+| `metadata.json` | Project metadata |
 
 ### Memory System
 
@@ -264,52 +266,50 @@ After each conversation turn, Gemini analyzes a slice of recent messages and pro
 
 ### Function Calling (Server-Side Tools)
 
-| Tool | Description |
+ELYSIA registers **~90 function declarations** with Gemini, spanning:
+
+| Category | Example Tools |
 |---|---|
-| `setReminder` | Create a timed reminder with optional repeat |
-| `manageMemory` | Add, update, or delete user memories |
-| `changeBackground` | Change the visualizer background gradient |
-| `readScreen` | OCR the active window via the desktop agent |
-| `launchApp` | Open an application via the desktop agent |
-| `browserNavigate` | Navigate the in-app browser to a URL |
-| `browserClick` | Click an element in the browser |
-| `browserType` | Type text in the browser |
-| `browserTabAction` | Open/close/switch browser tabs |
-| `systemCommand` | Execute a system command via the desktop agent |
-| `changeVoice` | Switch the Gemini Live voice |
-| `setWallpaper` | Change desktop wallpaper via the agent |
-| `setUserVolume` | Set user's system volume |
-| `setAssistantVolume` | Set assistant's audio output volume |
+| **Browser** | `browserOpen`, `browserSearch`, `browserClick`, `browserType`, `browserMediaControl`, `browserTabAction`, `browserScroll`, `browserGoBack` |
+| **Desktop Browser** | `desktopBrowserOpen`, `desktopBrowserSearch`, `desktopBrowserClick`, `desktopBrowserType`, `desktopBrowserFillForm`, `desktopBrowserGetLinks`, `desktopBrowserReadText`, `desktopBrowserScroll`, `desktopBrowserGoBack/Forward`, `desktopBrowserOpenTab/CloseTab` |
+| **System** | `setUserVolume`, `setAssistantVolume`, `setReminder`, `listReminders`, `cancelReminder`, `changeBackground`, `changeVoice` |
+| **OS Input** | `osType`, `osPress`, `osClick` |
+| **Memory** | `saveCustomMemory` |
+| **Desktop Agent** | All 88 Python tools are proxied through Gemini via `server.ts` — see [Desktop Agent section](#desktop-agent-python) for the full list. |
+
+All tools dispatch to either the Python desktop agent (port 8765) or handle directly in Node.js (memory, reminders, background, voice).
 
 ---
 
 ## Desktop Agent (Python)
 
-The Python desktop agent runs on port 8765 and provides **81 tools** across 19 modules:
+The Python desktop agent runs on port 8765 and provides **88 tools** across 22 modules:
 
 ### Tool Modules
 
 | Module | Tools | Description |
 |---|---|---|
-| `tools_applications` | `openApplication`, `closeApplication` | Launch/close 15+ pre-configured apps (Chrome, VS Code, Spotify, Discord, etc.) with Windows/Linux path mappings |
-| `tools_browser` | 16 browser tools | Full Playwright browser automation (CDP + managed modes): navigate, click, type, fill forms, scroll, read text, get links, tab management, media control, set mode |
-| `tools_clipboard` | `copySelected`, `pasteClipboard`, `getClipboard`, `clearClipboard` | System clipboard operations |
-| `tools_coding` | `createPythonFile`, `writeCodeFile`, `createProjectFolder`, `runPythonScript` | Code file creation (30+ language extensions) and Python execution |
-| `tools_confirmation` | `requestPowerAction`, `requestTerminalAction` | Two-step token-based confirmation for dangerous actions (60-second single-use tokens) |
-| `tools_conversation` | `exportConversation`, `listExports` | Save chat history to `data/conversations/` as JSON or text |
-| `tools_files` | `createFile`, `readFile`, `renameFile`, `deleteFile`, `moveFile`, `openFolder`, `listFiles`, `searchFiles` | Full file system operations with path confinement to safe directories |
-| `tools_hyprland` | `switchWorkspace`, `listWorkspaces`, `moveToWorkspace` | Hyprland (Wayland) workspace management via `hyprctl` |
-| `tools_iitm` | `iitmQuickLinks`, `iitmOpen`, `iitmOpenCustom` | IITM BS Degree portal shortcuts |
-| `tools_news` | `getNews` | Fetch top headlines across 6 categories via Google News RSS |
-| `tools_pc` | `volumeUp/Down`, `setVolume`, `brightnessUp/Down`, `setBrightness`, `muteToggle`, `executePowerAction`, `shutdownElysia` | System hardware controls |
-| `tools_screenshot` | `takeScreenshot`, `saveScreenshot`, `analyzeScreenshot`, `readScreen` | Screenshot capture + Tesseract OCR |
-| `tools_search` | `searchWeb`, `searchYouTube`, `searchGoogle`, `searchGitHub` | Web search shortcuts |
-| `tools_startup` | `enableAutoStart`, `disableAutoStart`, `getAutoStartStatus` | Auto-start on login (Windows registry) |
-| `tools_system` | `systemInfo`, `gpuInfo`, `temperatureInfo` | CPU, RAM, disk, GPU, temperature monitoring |
-| `tools_terminal` | `runTerminalCommand`, `provideSudoPassword`, `isCommandAllowed`, `installPackage` | Terminal execution with command blacklist + interactive sudo flow |
-| `tools_weather` | `getWeather` | Current weather, feels-like, humidity, wind via `wttr.in` |
-| `tools_websites` | `openWebsite` | 25+ named website shortcuts (YouTube, Gmail, GitHub, Reddit, etc.) |
-| `tools_windows` | `minimizeWindow`, `maximizeWindow`, `closeWindow`, `switchApplication` | Window management |
+| `applications` | `openApplication`, `closeApplication` | Launch/close 15+ pre-configured apps (Chrome, VS Code, Spotify, Discord, etc.) with Windows/Linux path mappings |
+| `browser` | 16 browser tools | Full Playwright browser automation (CDP + managed modes): navigate, click, type, fill forms, scroll, read text, get links, tab management, media control, set mode |
+| `clipboard` | `copySelected`, `pasteClipboard`, `getClipboard`, `clearClipboard` | System clipboard operations |
+| `coding` | `createPythonFile`, `writeCodeFile`, `createProjectFolder`, `runPythonScript` | Code file creation (30+ language extensions) and Python execution |
+| `confirmation` | `requestPowerAction`, `requestTerminalAction` | Two-step token-based confirmation for dangerous actions (60-second single-use tokens). Blacklist checked BEFORE token generation. |
+| `conversation` | `exportConversation`, `listExports` | Save chat history to `data/conversations/` as JSON or text |
+| `files` | `createFile`, `readFile`, `renameFile`, `deleteFile`, `moveFile`, `openFolder`, `listFiles`, `searchFiles` | Full file system operations with path confinement to safe directories |
+| `google` | `getCalendarEvents`, `createCalendarEvent`, `sendEmail`, `getEmails`, `getTasks`, `createTask` | Google Calendar, Gmail, and Tasks via OAuth 2.0 |
+| `hyprland` | `switchWorkspace`, `listWorkspaces`, `moveToWorkspace` | Hyprland (Wayland) workspace management via `hyprctl` |
+| `iitm` | `iitmQuickLinks`, `iitmOpen`, `iitmOpenCustom` | IITM BS Degree portal shortcuts |
+| `news` | `getNews` | Fetch top headlines across 6 categories via Google News RSS |
+| `os_input` | `osType`, `osPress`, `osClick` | OS-level keyboard and mouse simulation |
+| `pc` | `volumeUp/Down`, `setVolume`, `brightnessUp/Down`, `setBrightness`, `muteToggle`, `executePowerAction`, `shutdownElysia` | System hardware controls |
+| `screenshot` | `takeScreenshot`, `saveScreenshot`, `analyzeScreenshot`, `readScreen` | Screenshot capture + Tesseract OCR |
+| `search` | `searchWeb`, `searchYouTube`, `searchGoogle`, `searchGitHub` | Web search shortcuts |
+| `startup` | `enableAutoStart`, `disableAutoStart`, `getAutoStartStatus` | Auto-start on login (Windows registry) |
+| `system` | `systemInfo`, `gpuInfo`, `temperatureInfo` | CPU, RAM, disk, GPU, temperature monitoring |
+| `terminal` | `runTerminalCommand`, `provideSudoPassword`, `isCommandAllowed`, `installPackage` | Terminal execution with command blacklist + interactive sudo flow |
+| `weather` | `getWeather` | Current weather, feels-like, humidity, wind via `wttr.in` |
+| `websites` | `openWebsite` | 25+ named website shortcuts (YouTube, Gmail, GitHub, Reddit, etc.) |
+| `windows` | `minimizeWindow`, `maximizeWindow`, `closeWindow`, `switchApplication` | Window management |
 
 ### Cross-Platform Backend
 The Python agent abstracts OS-specific operations through a backend layer:
