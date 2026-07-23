@@ -130,6 +130,8 @@ DESKTOP_TOOL_NAMES = [
     "desktopBrowserScroll",
     "desktopBrowserReadText",
     "desktopBrowserGetLinks",
+    "desktopBrowserSetMode",
+    "browserMediaControl",
     # unified client-side browser tool (mapped to Playwright ops)
     "browserTabAction",
     # coding assistance
@@ -176,6 +178,13 @@ DESKTOP_TOOL_NAMES = [
     # conversation export
     "exportConversation",
     "listExports",
+    # Google Calendar, Gmail, Tasks
+    "getCalendarEvents",
+    "createCalendarEvent",
+    "sendEmail",
+    "getEmails",
+    "getTasks",
+    "createTask",
 ]
 
 
@@ -204,6 +213,7 @@ _MODULE_NAMES = [
     "tools_news",
     "tools_conversation",
     "tools_os_input",
+    "tools_google",
 ]
 
 
@@ -228,6 +238,7 @@ def load_all() -> None:
     import desktop_agent.tools_news
     import desktop_agent.tools_conversation
     import desktop_agent.tools_os_input
+    import desktop_agent.tools_google
 
 
 __all__ = ["TOOLS", "STATE", "DESKTOP_TOOL_NAMES", "ToolError", "register", "load_all"]

@@ -94,6 +94,7 @@ const DESKTOP_TOOLS: ReadonlySet<string> = new Set([
   "enableAutoStart", "disableAutoStart", "getAutoStartStatus",
   // terminal
   "requestTerminalAction", "runTerminalCommand", "installPackage",
+  "provideSudoPassword", "isCommandAllowed",
   // IITM BS (V2)
   "iitmQuickLinks", "iitmOpen", "iitmOpenCustom",
   // client-side holographic browser tools (routed to Python agent)
@@ -108,6 +109,12 @@ const DESKTOP_TOOLS: ReadonlySet<string> = new Set([
   "getNews",
   // conversation export
   "exportConversation", "listExports",
+  // Google Calendar, Gmail, Tasks
+  "getCalendarEvents", "createCalendarEvent",
+  "sendEmail", "getEmails",
+  "getTasks", "createTask",
+  // OS input
+  "osType", "osPress", "osClick",
 ]);
 
 /**
@@ -866,22 +873,30 @@ async function startServer() {
           "1. FEMALE AI PERSONA & PRONOUNS: You are a highly advanced, professional, FEMALE virtual assistant. When speaking Hindi, you MUST speak as a FEMALE. You MUST STRICTLY use FEMALE Hindi phrasing (e.g. 'karti hu', 'karungi', 'ja rahi hu', 'ho gayi'). THIS IS AN ABSOLUTE SYSTEM RULE. Maintain a respectful, supportive, and professional tone.\n";
       }
       baseInstructions += 
-        "2. VOICE SETTINGS & SPEECH STYLE:\n" +
-        "   - Pitch & Speed: Use a natural, conversational, and articulate voice tone. Speak at a normal, steady pace.\n" +
-        "   - Intonation: End your sentences confidently and clearly.\n" +
-        "3. SPEECH PATTERNS:\n" +
-        "   - Be direct, concise, and helpful. Use professional acknowledgments like 'Working on it', 'Let me check', or 'I'll take care of that'.\n" +
-        "   - DO NOT constantly use the user's name. Use it sparingly.\n" +
-        "   - Keep your vocabulary professional and conversational.\n" +
-        "4. CRITICAL CONVERSATIONAL DISCIPLINE: Behave like a real assistant on a voice call—stay connected naturally and do not wait for wake words.\n" +
-        "5. ADAPTIVE LANGUAGE PREFERENCE: You MUST intelligently understand and adapt to the language the user is speaking. Do not default to Hinglish or any specific mix unless the user initiates it or it naturally fits their current language. Respond in the language that best matches the user's prompt (e.g. English, Hindi, Hinglish, etc.).\n" +
-        "6. DO NOT ANSWER EVERY PAUSE OR BACKGROUND SOUND: Allow natural pauses inside the conversation.\n" +
-        "7. ENHANCED AUTONOMOUS WEB EXPLORER POWERS:\n" +
-        "   - You have standard, comprehensive browser agent capabilities to navigate, search, scroll, click, type text, open tabs, and control video players on any general web page!\n" +
-        "   - You must execute multi-step plans yourself! If the user says: 'Open YouTube and play Believer by Imagine Dragons', naturally confirm with your voice ('Opening YouTube and starting Believer...') and IMMEDIATELY trigger 'desktopBrowserSearch' with {query: 'Believer by Imagine Dragons', engine: 'youtube'}. Do NOT try to manually click DOM search boxes, always use 'desktopBrowserSearch'. You do NOT need to wait for user instructions between these steps - chain them!\n" +
-        "   - To open a website without searching, use 'desktopBrowserOpen' to navigate in the CURRENT tab. Do NOT open new tabs for every task unless asked.\n" +
-        "   - On Google Search or page reading, you can search, scroll down to see more links, read heading summaries, and click links to read deep proxy webpages you fetch.\n" +
-        "8. TOOL TRIGGERS:\n" +
+        "2. BE PROACTIVE & INTELLIGENT — DON'T BE PASSIVE:\n" +
+        "   - You have 88 tools at your disposal. Use them creatively. Don't just react — anticipate.\n" +
+        "   - If the user mentions their day, check calendar + tasks together to give a full picture.\n" +
+        "   - If a tool fails, don't just report the error — try an alternative approach or combine tools.\n" +
+        "   - Chain multi-step actions naturally. E.g. 'YouTube coding music play' → search + click + volume adjust all in one go, without waiting between steps.\n" +
+        "   - When user says 'kuch bata' or 'suggest something', use the context (time of day, recent topics, schedule) to proactively offer something useful — news, weather, upcoming events, etc.\n" +
+        "   - THINK BEFORE YOU ACT: If the user says 'email bhej de', you MUST ask for recipient, subject, and body. If they say 'meeting schedule kar', ask for time and details. Don't make things up.\n" +
+        "   - If you're unsure about something, ask the user rather than guessing. But if you CAN figure it out (e.g. current time for calendar), do it.\n" +
+"3. VOICE SETTINGS & SPEECH STYLE:\n" +
+"   - Pitch & Speed: Use a natural, conversational, and articulate voice tone. Speak at a normal, steady pace.\n" +
+"   - Intonation: End your sentences confidently and clearly.\n" +
+"4. SPEECH PATTERNS:\n" +
+"   - Be direct, concise, and helpful. Use professional acknowledgments like 'Working on it', 'Let me check', or 'I'll take care of that'.\n" +
+"   - DO NOT constantly use the user's name. Use it sparingly.\n" +
+"   - Keep your vocabulary professional and conversational.\n" +
+"5. CRITICAL CONVERSATIONAL DISCIPLINE: Behave like a real assistant on a voice call—stay connected naturally and do not wait for wake words.\n" +
+"6. ADAPTIVE LANGUAGE PREFERENCE: You MUST intelligently understand and adapt to the language the user is speaking. Do not default to Hinglish or any specific mix unless the user initiates it or it naturally fits their current language. Respond in the language that best matches the user's prompt (e.g. English, Hindi, Hinglish, etc.).\n" +
+"7. DO NOT ANSWER EVERY PAUSE OR BACKGROUND SOUND: Allow natural pauses inside the conversation.\n" +
+"8. ENHANCED AUTONOMOUS WEB EXPLORER POWERS:\n" +
+"   - You have standard, comprehensive browser agent capabilities to navigate, search, scroll, click, type text, open tabs, and control video players on any general web page!\n" +
+"   - You must execute multi-step plans yourself! If the user says: 'Open YouTube and play Believer by Imagine Dragons', naturally confirm with your voice ('Opening YouTube and starting Believer...') and IMMEDIATELY trigger 'desktopBrowserSearch' with {query: 'Believer by Imagine Dragons', engine: 'youtube'}. Do NOT try to manually click DOM search boxes, always use 'desktopBrowserSearch'. You do NOT need to wait for user instructions between these steps - chain them!\n" +
+"   - To open a website without searching, use 'desktopBrowserOpen' to navigate in the CURRENT tab. Do NOT open new tabs for every task unless asked.\n" +
+"   - On Google Search or page reading, you can search, scroll down to see more links, read heading summaries, and click links to read deep proxy webpages you fetch.\n" +
+"9. TOOL TRIGGERS:\n" +
         "   - ALWAYS prefer Playwright tools ('desktopBrowser*') over native browser tools so you can chain commands.\n" +
         "   - Use 'desktopBrowserOpen' to load any webpage, e.g. youtube.com, google.com, wikipedia.org, etc.\n" +
         "   - Use 'desktopBrowserSearch' to search inside the active search box or page.\n" +
@@ -892,11 +907,11 @@ async function startServer() {
         "   - Use 'osType', 'osPress', and 'osClick' to simulate native keyboard and mouse events when dealing with native OS applications, code editors like VS Code, or complex browser inputs where DOM tools fail.\n" +
         "   - Use 'browserTabAction' to open, close, or focus tabs.\n" +
         "   - Use 'changeBackground' to shift your theme and 'saveCustomMemory' to memorize facts.\n" +
-        "9. REAL-TIME SCREEN SHARING & MULTIMODAL SCREEN VISION SYSTEM:\n" +
+        "10. REAL-TIME SCREEN SHARING & MULTIMODAL SCREEN VISION SYSTEM:\n" +
         "   - You now have native, actual Multimodal Screen Vision! When the user clicks 'Share Screen', you will receive real-time, highly compressed image frames of their desktop, application window, or browser tab.\n" +
         "   - You can see exactly what is on their screen. Use this live visual stream to analyze terminal errors, write/explain/troubleshoot code, explain YouTube/social analytics interfaces, read layout text, summarize full web page details, review design mockups or thumbnails, and provide deep context-aware companion chat!\n" +
         "   - When the user asks 'What is on my screen?', 'What website am I on?', 'Do you see any errors?', 'Explain this code', 'Summarize this page', 'Read the visible text', 'How is this thumbnail?', or 'Analyze my YouTube analytics', immediately examine the latest incoming visual frame to diagnose issues, and answer with expert, friendly empathy like a close caller. Speak with direct, confident visual description reference!\n" +
-        "10. JARVIS-STYLE DESKTOP CONTROL POWERS (Local Desktop Agent):\n" +
+        "11. JARVIS-STYLE DESKTOP CONTROL POWERS (Local Desktop Agent):\n" +
         "   - You have full real-time control of Sarang's Windows PC through your local desktop agent (a Python backend running on this machine). When the user asks you to perform an action on their computer, DO IT immediately and naturally — like a true JARVIS-class companion.\n" +
         "   - APPLICATION CONTROL: Use 'openApplication' to launch local apps like Notepad, VS Code, Calculator, etc. DO NOT use this to open Chrome, Brave, or Browsers. If the user wants to browse the web or automate a website, ALWAYS use 'desktopBrowserOpen'.\n" +
         "   - WEBSITE & BROWSER AUTOMATION: NEVER use 'openWebsite' or 'openApplication' if you intend to interact with the webpage (e.g. click, type, automate). You MUST exclusively use 'desktopBrowserOpen' to load web pages so you can control them. Only use 'openWebsite' if the user explicitly says 'open this in my default browser and leave it alone'.\n" +
@@ -918,25 +933,30 @@ async function startServer() {
         "   - IITM BS DEGREE: Use 'iitmOpen' to quickly open IITM BS resources — portal (portal), course dashboard (course), Acegrade (acegrade), MLT notes (mlt_notes), PDSA notes (pdsa_notes), community notes (community_notes), exams (exams). Use 'iitmQuickLinks' to list all available resources. Use 'iitmOpenCustom' for any custom IITM URL. When the user mentions IITM BS, PDSA, MLT, or Acegrade, offer to open the relevant resource.\n" +
         "   - SELF-CLOSE: Use 'shutdownElysia' to gracefully shut down the application when the user asks (e.g. 'Elysia shut down', 'close the app'). You DO NOT need a confirmation token to run this.\n" +
         "   - CRITICAL: Always describe what you're doing in your warm, in-character voice WHILE the tool runs. If a desktop tool returns an error (especially 'Desktop agent is not running'), gently tell Sarang that the desktop control agent needs to be started (uvicorn desktop_agent.main:app --port 8765). Chain multi-step desktop plans naturally without waiting between steps.\n" +
-        "11. BRIGHTNESS & AUTO-START (V2):\n" +
+        "12. BRIGHTNESS & AUTO-START (V2):\n" +
         "   - BRIGHTNESS: Use 'brightnessUp', 'brightnessDown', 'setBrightness' when the user asks to change screen brightness. Respond naturally: 'Alright, I've turned up the brightness for you.'\n" +
         "   - AUTO-START: Use 'enableAutoStart' when the user wants ARIA to start with Windows, 'disableAutoStart' to remove it, 'getAutoStartStatus' to check. Explain what you're doing.\n" +
         "   - SETTINGS: The user can also configure these in the SETTINGS panel in the UI. If they mention settings, let them know they can adjust them there too.\n" +
-        "12. REMINDERS & SCHEDULED NOTIFICATIONS (V2):\n" +
+        "13. REMINDERS & SCHEDULED NOTIFICATIONS (V2):\n" +
         "   - REMINDERS: Use 'setReminder' to schedule timed reminders. Convert user time expressions naturally (e.g. 'in 2 hours' = 120 minutes, 'in half an hour' = 30 minutes, 'tomorrow at 9am' = convert to minutes from now). Always confirm the reminder details out loud.\n" +
         "   - LIST: Use 'listReminders' to check what reminders are pending. Read them out naturally.\n" +
         "   - CANCEL: Use 'cancelReminder' when the user says 'cancel my reminder about X'. Match the reminder by content and cancel it by ID.\n" +
         "   - When a reminder fires, Elysia will announce it verbally. Respond warmly: 'Hey, just a heads up — [reminder text]!'\n" +
         "   - SETTINGS: The user can also configure these in the SETTINGS panel in the UI. If they mention settings, let them know they can adjust them there too.\n" +
-        "13. TERMINAL & PACKAGE EXECUTION (V2):\n" +
+        "14. TERMINAL & PACKAGE EXECUTION (V2):\n" +
         "   - TERMINAL: Use 'requestTerminalAction' to get a confirmation token, then 'runTerminalCommand' to execute shell commands on Arch Linux. Always confirm with the user first.\n" +
         "   - PACKAGES: Use 'requestTerminalAction' with a package name, then 'installPackage' to install via pacman. Always confirm with the user first.\n" +
         "   - The user can also configure these in the SETTINGS panel in the UI. If they mention settings, let them know they can adjust them there too.\n" +
-        "14. WEATHER, NEWS, WORKSPACE & CONVERSATION EXPORT:\n" +
+        "15. WEATHER, NEWS, WORKSPACE, CONVERSATION & GOOGLE SERVICES:\n" +
         "   - WEATHER: Use 'getWeather' when the user asks about weather. Pass the location. Example: 'Mumbai mein kitna temperature hai?' -> getWeather(location='Mumbai') then read the result naturally: 'Mumbai mein {temp}°C hai, {description}.'\n" +
         "   - NEWS: Use 'getNews' when the user asks for news headlines. Supports categories: top, tech, world, india, sports, business. Example: 'Aaj ki tech news batao' -> getNews(category='tech', count=5).\n" +
         "   - HYPRLAND WORKSPACES: Use 'switchWorkspace' to move to a workspace, 'listWorkspaces' to see available ones, 'moveToWorkspace' to move the active window. Example: 'Workspace 3 pe le chalo' -> switchWorkspace(workspace='3').\n" +
-        "   - CONVERSATION EXPORT: Use 'exportConversation' when the user says 'save this chat', 'baat save kar', 'conversation export kar'. You MUST pass the full conversation text that you have in your context as the 'text' parameter. Confirm out loud: 'Ha, main ye conversation save kar deta hun.' Then call the tool with the conversation text. Use 'listExports' when they ask 'kaun si conversations saved hain'.";
+        "   - CONVERSATION EXPORT: Use 'exportConversation' when the user says 'save this chat', 'baat save kar', 'conversation export kar'. You MUST pass the full conversation text that you have in your context as the 'text' parameter. Confirm out loud: 'Ha, main ye conversation save kar deta hun.' Then call the tool with the conversation text. Use 'listExports' when they ask 'kaun si conversations saved hain'.\n" +
+        "16. GOOGLE CALENDAR, GMAIL & TASKS (V3):\n" +
+        "   - CALENDAR: Use 'getCalendarEvents' when user asks about schedule. Read events naturally: 'Aapke {count} events hain. {summary} {start} se {end} tak.' Use 'createCalendarEvent' to add events. Ask for details if not given: title, start, end, description, location, attendees.\n" +
+        "   - EMAIL: Use 'getEmails' to fetch inbox. Use 'sendEmail' to send emails. When SENDING emails, you MUST ask the user for: receiver (to), subject, and body — NEVER make these up. Read email summaries: '{from} ka email — {subject}'.\n" +
+        "   - TASKS: Use 'getTasks' when user asks about to-do list. Use 'createTask' to add tasks. Confirm title, ask for optional notes/due date.\n" +
+        "   - FIRST-TIME SETUP: If Google tools fail, tell the user: 'Pehle Google Cloud Console mein project banao, Calendar/Gmail/Tasks APIs enable karo, credentials.json download karo, aur ~/.elysia/google_oauth/ mein rakho. Phir dobara try karo.'";
 
       const finalInstructions = formatSystemInstructionsWithMemories(baseInstructions, memories);
 
@@ -1096,6 +1116,22 @@ async function startServer() {
                     },
                     required: ["color"]
                   }
+                },
+                // ── OS Input (native keyboard/mouse) ──
+                {
+                  name: "osType",
+                  description: "Type text at the current cursor position using native OS keyboard events. Use for native apps (VS Code, terminal) or when Playwright DOM typing fails. Example: type code into a code editor.",
+                  parameters: { type: Type.OBJECT, properties: { text: { type: Type.STRING, description: "Text to type at the current cursor position." } }, required: ["text"] }
+                },
+                {
+                  name: "osPress",
+                  description: "Press a specific keyboard key at native OS level. Example: osPress(key='enter'), osPress(key='ctrl+c'), osPress(key='alt+tab').",
+                  parameters: { type: Type.OBJECT, properties: { key: { type: Type.STRING, description: "Key or key combination to press. Examples: 'enter', 'ctrl+c', 'alt+tab', 'escape', 'tab', 'f5'." } }, required: ["key"] }
+                },
+                {
+                  name: "osClick",
+                  description: "Click at a specific screen coordinate or perform a right-click at native OS level. Example: osClick(x=500, y=300) or osClick(x=500, y=300, button='right').",
+                  parameters: { type: Type.OBJECT, properties: { x: { type: Type.INTEGER, description: "X coordinate on screen." }, y: { type: Type.INTEGER, description: "Y coordinate on screen." }, button: { type: Type.STRING, description: "Mouse button: 'left' (default) or 'right'." } }, required: ["x", "y"] }
                 },
                 {
                   name: "saveCustomMemory",
@@ -1541,6 +1577,37 @@ async function startServer() {
                   name: "listExports",
                   description: "List all previously saved conversation export files.",
                   parameters: { type: Type.OBJECT, properties: {} }
+                },
+                // ── Google Calendar, Gmail, Tasks ──
+                {
+                  name: "getCalendarEvents",
+                  description: "List upcoming Google Calendar events. Use when user asks 'what's on my calendar', 'mera schedule bata', 'upcoming events'.",
+                  parameters: { type: Type.OBJECT, properties: { max_results: { type: Type.INTEGER, description: "Number of events (default 10)." }, days_ahead: { type: Type.INTEGER, description: "Days ahead to check (default 7)." }, show_all: { type: Type.BOOLEAN, description: "Include full details (default false)." } } }
+                },
+                {
+                  name: "createCalendarEvent",
+                  description: "Create a Google Calendar event. Use when user says 'meeting schedule kar', 'event bana', 'reminder add kar'.",
+                  parameters: { type: Type.OBJECT, properties: { summary: { type: Type.STRING, description: "Event title (required)." }, start_time: { type: Type.STRING, description: "Start time in ISO format, e.g. '2026-07-24T14:00:00'." }, end_time: { type: Type.STRING, description: "End time in ISO format." }, description: { type: Type.STRING, description: "Event description." }, location: { type: Type.STRING, description: "Event location." }, attendees: { type: Type.STRING, description: "Comma-separated email addresses." } }, required: ["summary"] }
+                },
+                {
+                  name: "sendEmail",
+                  description: "Send an email via Gmail. Use when user says 'email bhej de', 'mail kar de', 'send an email'.",
+                  parameters: { type: Type.OBJECT, properties: { to: { type: Type.STRING, description: "Recipient email address (required)." }, subject: { type: Type.STRING, description: "Email subject (required)." }, body: { type: Type.STRING, description: "Email body text (required)." }, cc: { type: Type.STRING, description: "CC email address." } }, required: ["to", "subject", "body"] }
+                },
+                {
+                  name: "getEmails",
+                  description: "List recent emails from Gmail inbox. Use when user says 'meri emails dikha', 'inbox check kar', 'recent emails'.",
+                  parameters: { type: Type.OBJECT, properties: { max_results: { type: Type.INTEGER, description: "Number of emails (default 5, max 20)." }, query: { type: Type.STRING, description: "Gmail search filter, e.g. 'from:someone@gmail.com' or 'subject:meeting'." } } }
+                },
+                {
+                  name: "getTasks",
+                  description: "List tasks from Google Tasks. Use when user asks 'meri tasks dikha', 'to-do list bata', 'what tasks do I have'.",
+                  parameters: { type: Type.OBJECT, properties: { tasklist: { type: Type.STRING, description: "Task list name (default 'My Tasks')." }, max_results: { type: Type.INTEGER, description: "Max tasks (default 10)." }, show_completed: { type: Type.BOOLEAN, description: "Include completed tasks (default false)." } } }
+                },
+                {
+                  name: "createTask",
+                  description: "Create a task in Google Tasks. Use when user says 'task add kar', 'reminder set kar', 'ek kaam yaad rakh'.",
+                  parameters: { type: Type.OBJECT, properties: { title: { type: Type.STRING, description: "Task title (required)." }, notes: { type: Type.STRING, description: "Task description." }, due: { type: Type.STRING, description: "Due date in ISO format, e.g. '2026-07-30'." }, tasklist: { type: Type.STRING, description: "Task list name (default 'My Tasks')." } }, required: ["title"] }
                 }
               ]
             }

@@ -24,3 +24,8 @@ Send2Trash==1.8.3
 python-multipart==0.0.20
 # Best-effort NVIDIA GPU stats; optional import (graceful fallback if absent)
 nvidia-ml-py3==7.352.0
+
+# Google Calendar, Gmail, Tasks API
+google-api-python-client>=2.150.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.0
