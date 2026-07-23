@@ -53,10 +53,10 @@ ELYSIA runs as **3 separate processes** that communicate over HTTP/WebSocket:
 ```
 
 | Process | Port | Runtime | Role |
-|---|---|---|---|
+|---|---|---|---|---|
 | **Node.js Server** | 3000 | Express + WebSocket | Orchestrator. Bridges browser to Gemini Live API. Handles function calling, memory CRUD, reminders, settings, API key storage. |
-| **Python Desktop Agent** | 8765 | FastAPI + Playwright | OS-level tool execution. Receives `POST /execute { tool, args }` dispatches. Manages browser, screenshots, clipboard, files, power actions, system info. |
-| **Vite React Frontend** | 3000 (served) | React 19 + Tailwind CSS v4 | Holographic UI with canvas visualizer, video character, settings panel, memory dashboard, transcript, browser agent, text chat fallback. |
+| **Python Desktop Agent** | 8765 | FastAPI + Playwright | OS-level tool execution. 81 tools across 19 modules. Receives `POST /execute { tool, args }` dispatches. Manages browser (CDP/managed modes), screenshots, clipboard, files, power, terminal, Hyprland workspaces, weather, news, coding, conversation export. |
+| **Vite React Frontend** | 3000 (served) | React 19 + Tailwind CSS v4 | Holographic UI with canvas visualizer, video character or orb animation, settings panel, memory dashboard, transcript, browser agent, text chat fallback, sudo popup. |
 
 ---
 
@@ -117,12 +117,16 @@ elysia-ai-assistant/
 ├── vite.config.ts
 ├── index.html
 ├── .env                       # Environment variables (GEMINI_API_KEY, etc.)
+├── .env.local                 # Environment template (no secrets)
 │
 ├── public/
 │   └── assets/
-│       ├── idle.mp4           # Holographic character — idle state
-│       ├── thinking.mp4       # Holographic character — thinking state
-│       └── talking.mp4        # Holographic character — talking state
+│       ├── idle.mp4 / idle.webm       # Character video — idle state
+│       ├── thinking.mp4 / thinking.webm # Character video — thinking state
+│       ├── talking.mp4 / talking.webm  # Character video — talking state
+│       ├── orb2.gif                   # Orb animation (alternative to character video)
+│       ├── bg-6.mp4 / bg-7.mp4        # Background ambient videos
+│       └── download.gif / download_static.png # Legacy orb assets
 │
 ├── src/
 │   ├── main.tsx               # React entry point
@@ -164,18 +168,22 @@ elysia-ai-assistant/
     │
     └── tools/
         ├── tools_applications.py   # openApplication, closeApplication (15+ apps)
-        ├── tools_browser.py        # desktopBrowser* (14 browser tools)
+        ├── tools_browser.py        # desktopBrowser* (16 tools, CDP/managed modes)
         ├── tools_clipboard.py      # copy/paste/get/clear clipboard
         ├── tools_coding.py         # createPythonFile, writeCodeFile, runPythonScript
         ├── tools_confirmation.py   # requestPowerAction, requestTerminalAction (2-step token)
+        ├── tools_conversation.py   # exportConversation, listExports (save chat history)
         ├── tools_files.py          # create/read/rename/delete/move/open/list/search files
+        ├── tools_hyprland.py       # switchWorkspace, listWorkspaces (Hyprland/Wayland only)
         ├── tools_iitm.py           # IITM BS Degree portal quick links
+        ├── tools_news.py           # getNews (6 categories via Google News RSS)
         ├── tools_pc.py             # volume/brightness/power/shutdown controls
         ├── tools_screenshot.py     # take/save/analyze screenshots, readScreen (OCR)
         ├── tools_search.py         # searchWeb, searchYouTube, searchGoogle, searchGitHub
         ├── tools_startup.py        # enable/disable auto-start (Windows registry)
         ├── tools_system.py         # systemInfo, gpuInfo, temperatureInfo
-        ├── tools_terminal.py       # runTerminalCommand (with command blacklist)
+        ├── tools_terminal.py       # runTerminalCommand (with command blacklist + sudo)
+        ├── tools_weather.py        # getWeather (via wttr.in)
         ├── tools_websites.py       # openWebsite (25+ named shortcuts)
         └── tools_windows.py        # minimize/maximize/close/switch windows
 ```
@@ -196,14 +204,21 @@ elysia-ai-assistant/
 - When detected, the visualizer transitions to listening state and captures speech
 
 ### Function Calling
-- Gemini can invoke 14+ server-side tools during conversation (reminders, memory management, background changes, app launching, browser control, system commands, voice changes, volume control)
-- Server-side tools that need OS access dispatch to the Python Desktop Agent via HTTP
+- Gemini can invoke 80+ server-side tools during conversation across 19 modules
+- Tools are dispatched via `POST /execute` to the Python Desktop Agent (port 8765)
+- Terminal commands and power actions use a **two-step token confirmation** system
+- Blacklisted commands (`rm -rf`, `:(){:|:&};:`, etc.) are blocked at the token generation step — the AI never asks the user to confirm
+- File operations are confined to safe directories (Home, Desktop, Documents, etc.)
+- Browser automation supports two modes:
+  - **Managed mode** (default): Playwright launches its own headed Chromium — works out of the box
+  - **CDP mode**: Connects to the user's existing Chrome via `--remote-debugging-port=9222` — preserves cookies/logins
 
-### Holographic Character
-- Three MP4 video states: **idle**, **thinking**, **talking**
-- Canvas-based visualizer renders particle rings, plasma core, and emotion glow
-- Character state transitions based on conversation state
-- Mouse-tracking parallax effect on the holographic ring
+### Holographic Character / Orb
+- Two visual styles:
+  - **Character mode**: Three MP4/WebM video states (idle, thinking, talking) with canvas-based holographic effects
+  - **Orb mode**: Animated GIF orb (e.g., `orb2.gif`) with state-driven scale/opacity transitions
+- Canvas renders particle rings, plasma core, emotion glow, scanlines, and mouse-tracking parallax
+- GPU acceleration via `translateZ(0)` and contrast/brightness/saturation CSS filters
 
 ---
 
@@ -270,27 +285,58 @@ After each conversation turn, Gemini analyzes a slice of recent messages and pro
 
 ## Desktop Agent (Python)
 
-The Python desktop agent runs on port 8765 and provides **40+ tools** across 15 modules:
+The Python desktop agent runs on port 8765 and provides **81 tools** across 19 modules:
 
 ### Tool Modules
 
 | Module | Tools | Description |
 |---|---|---|
 | `tools_applications` | `openApplication`, `closeApplication` | Launch/close 15+ pre-configured apps (Chrome, VS Code, Spotify, Discord, etc.) with Windows/Linux path mappings |
-| `tools_browser` | 14 browser tools | Full Playwright browser automation: navigate, click, type, fill forms, scroll, read text, get links, tab management |
+| `tools_browser` | 16 browser tools | Full Playwright browser automation (CDP + managed modes): navigate, click, type, fill forms, scroll, read text, get links, tab management, media control, set mode |
 | `tools_clipboard` | `copySelected`, `pasteClipboard`, `getClipboard`, `clearClipboard` | System clipboard operations |
 | `tools_coding` | `createPythonFile`, `writeCodeFile`, `createProjectFolder`, `runPythonScript` | Code file creation (30+ language extensions) and Python execution |
 | `tools_confirmation` | `requestPowerAction`, `requestTerminalAction` | Two-step token-based confirmation for dangerous actions (60-second single-use tokens) |
+| `tools_conversation` | `exportConversation`, `listExports` | Save chat history to `data/conversations/` as JSON or text |
 | `tools_files` | `createFile`, `readFile`, `renameFile`, `deleteFile`, `moveFile`, `openFolder`, `listFiles`, `searchFiles` | Full file system operations with path confinement to safe directories |
+| `tools_hyprland` | `switchWorkspace`, `listWorkspaces`, `moveToWorkspace` | Hyprland (Wayland) workspace management via `hyprctl` |
 | `tools_iitm` | `iitmQuickLinks`, `iitmOpen`, `iitmOpenCustom` | IITM BS Degree portal shortcuts |
+| `tools_news` | `getNews` | Fetch top headlines across 6 categories via Google News RSS |
 | `tools_pc` | `volumeUp/Down`, `setVolume`, `brightnessUp/Down`, `setBrightness`, `muteToggle`, `executePowerAction`, `shutdownElysia` | System hardware controls |
 | `tools_screenshot` | `takeScreenshot`, `saveScreenshot`, `analyzeScreenshot`, `readScreen` | Screenshot capture + Tesseract OCR |
 | `tools_search` | `searchWeb`, `searchYouTube`, `searchGoogle`, `searchGitHub` | Web search shortcuts |
 | `tools_startup` | `enableAutoStart`, `disableAutoStart`, `getAutoStartStatus` | Auto-start on login (Windows registry) |
 | `tools_system` | `systemInfo`, `gpuInfo`, `temperatureInfo` | CPU, RAM, disk, GPU, temperature monitoring |
-| `tools_terminal` | `runTerminalCommand`, `installPackage` | Terminal execution with command blacklist |
+| `tools_terminal` | `runTerminalCommand`, `provideSudoPassword`, `isCommandAllowed`, `installPackage` | Terminal execution with command blacklist + interactive sudo flow |
+| `tools_weather` | `getWeather` | Current weather, feels-like, humidity, wind via `wttr.in` |
 | `tools_websites` | `openWebsite` | 25+ named website shortcuts (YouTube, Gmail, GitHub, Reddit, etc.) |
 | `tools_windows` | `minimizeWindow`, `maximizeWindow`, `closeWindow`, `switchApplication` | Window management |
+
+### Cross-Platform Backend
+The Python agent abstracts OS-specific operations through a backend layer:
+- `backends/base.py` — abstract interfaces (`WindowManager`, `AudioController`, `ClipboardManager`, `TerminalController`, `Launcher`, `ScreenshotController`)
+- `backends/factory.py` — OS detection + backend instantiation
+- `backends/windows.py` — Win32 API (win32gui, ctypes)
+- `backends/linux_wayland.py` — Hyprland/Wayland (hyprctl, wpctl, brightnessctl)
+
+### Browser Modes
+
+| Mode | Description | When to Use |
+|---|---|---|
+| **Managed** (default) | Playwright launches its own headed Chromium. Fresh session, no saved logins. | Works out of the box — best for demos and testing. |
+| **CDP** | Connects to user's existing Chrome via `--remote-debugging-port=9222`. | Best for daily use — preserves cookies, logins, and browser state. Requires Chrome to be started with `google-chrome-stable --remote-debugging-port=9222`. |
+
+Switch at runtime with `desktopBrowserSetMode(mode: "cdp" | "managed")`.
+
+### Security Model
+
+| Layer | Mechanism |
+|---|---|
+| **Terminal Blacklist** | 15+ dangerous patterns blocked at token-generation step (never asks user to confirm) |
+| **Power Confirmation** | Two-step token (60s expiry) for shutdown/restart/sleep/lock |
+| **Sudo Elevation** | Interactive `provideSudoPassword` — password used once, never stored |
+| **File Path Confinement** | Operations restricted to safe roots (Home, Desktop, Documents, Downloads, etc.) |
+| **Safe Deletion** | `send2trash` by default; permanent delete requires explicit `permanent=true` |
+| **API Key Isolation** | Keys stored in `secrets.json`, never sent to frontend after setup |
 
 ---
 
@@ -331,7 +377,7 @@ The Python desktop agent runs on port 8765 and provides **40+ tools** across 15 
 ## Security Model
 
 ### Terminal Command Blacklist
-Blocks dangerous commands: `sudo`, `rm -rf`, `chmod`, `shutdown`, `systemctl`, `curl`, `wget`, `python`, `pip`, `gcc`, `dd`, `mkfs`, `fdisk`, and more.
+Blocks dangerous commands: `rm -rf /`, `dd if=`, `mkfs.`, `:(){ :|:& };:`, `chmod -R 777 /`, `> /dev/sda`, and more. Blacklisted commands are rejected **at the token generation step** — the AI never asks the user to confirm a blocked command.
 
 ### Power Action Confirmation (Two-Step Token)
 1. `requestPowerAction` mints a single-use, 60-second token
@@ -364,11 +410,19 @@ Keys stored in `secrets.json` in the data directory; only the backend reads them
 
 ### Application Shortcuts (tools_websites.py)
 
-25+ named shortcuts: YouTube, Gmail, GitHub, Reddit, Twitter/X, Stack Overflow, Notion, Google Drive, WhatsApp Web, LinkedIn, Netflix, Spotify, ChatGPT, Hugging Face, Kaggle, GeeksforGeeks, and more.
+25+ named shortcuts: YouTube, Gmail, GitHub, Reddit, Twitter/X, Stack Overflow, Notion, Google Drive, WhatsApp Web, LinkedIn, Netflix, Spotify, ChatGPT, Hugging Face, Kaggle, GeeksforGeeks, LeetCode, and more.
 
 ### Pre-configured Applications (tools_applications.py)
 
-Chrome, Firefox, VS Code, Terminal, File Manager, Spotify, Discord, Slack, Obsidian, Notion, Teams, Zoom, Steam — with both Windows and Linux path mappings.
+Chrome, Firefox, VS Code, Terminal (kitty/gnome-terminal), File Manager, Spotify, Discord, Slack, Obsidian, Notion, Teams, Zoom, Steam — with both Windows and Linux path mappings.
+
+### Conversation Export
+
+Chat history can be saved to `data/conversations/` as JSON or plain text files via `exportConversation`/`listExports` tools.
+
+### Hyprland Workspace Management (Linux/Wayland only)
+
+Three tools for Hyprland compositor: `switchWorkspace`, `listWorkspaces`, `moveToWorkspace` — all via `hyprctl` commands.
 
 ---
 
@@ -387,8 +441,9 @@ npm install
 # Install Python dependencies
 pip install -r desktop_agent/requirements.txt
 
-# Set your API key in .env
-echo "GEMINI_API_KEY=your_key_here" > .env
+# Copy environment template and set your API key
+cp .env.local .env
+# Then edit .env with your GEMINI_API_KEY
 
 # Start everything (Python agent + Node server)
 bash start_elysia.sh
@@ -411,12 +466,12 @@ npm run start    # Starts Python agent + Node.js production server
 
 ### Scripts
 
-| Command | Description |
+| Script | Description |
 |---|---|
-| `npm run dev` | Vite dev server + Node.js backend with HMR |
+| `bash start_elysia.sh` | Launches both Python agent + Node.js server |
+| `npm run dev` | Starts Node.js server with Vite middleware (HMR disabled via `.env`) |
 | `npm run build` | `vite build` + `esbuild` bundles server to `dist/server.cjs` |
-| `npm run start` | Production: starts Python agent + Node.js server |
-| `bash start_elysia.sh` | Launches both processes |
+| `npm run start` | Production: starts Python agent + Node.js production server |
 
 ---
 
@@ -425,10 +480,19 @@ npm run start    # Starts Python agent + Node.js production server
 | Variable | Description | Default |
 |---|---|---|
 | `GEMINI_API_KEY` / `GOOGLE_API_KEY` / `GOOGLE_GENAI_API_KEY` | Gemini API authentication | — |
+| `ELYSIA_BROWSER_MODE` | Browser automation mode: `managed` or `cdp` | `managed` |
+| `ELYSIA_CDP_URL` | CDP WebSocket URL (only used in CDP mode) | `http://127.0.0.1:9222` |
 | `ELYSIA_DATA_DIR` | Custom data directory path | `~/.elysia/` |
 | `ELYSIA_AGENT_HOST` | Desktop agent host | `127.0.0.1` |
 | `ELYSIA_AGENT_PORT` | Desktop agent port | `8765` |
-| `DISABLE_HMR` | Toggle Vite HMR off | `false` |
+| `DISABLE_HMR` | Toggle Vite HMR/file-watching off | `false` |
+
+Copy `.env.local` to `.env` and fill in your API key:
+
+```bash
+cp .env.local .env
+# Then edit .env with your keys
+```
 
 ---
 
@@ -451,15 +515,21 @@ npm run start    # Starts Python agent + Node.js production server
 ## How This Was Built
 
 Originally scaffolded from a **Google AI Studio** export. Heavily expanded into a full desktop automation platform with:
-- Holographic video character system
+- Holographic video character system + orb animation mode
 - Persistent memory with AI-powered extraction
-- Cross-platform desktop agent with 40+ tools
-- In-app Playwright browser
-- Wake word detection
+- Cross-platform desktop agent with 81 tools across 19 modules
+- Dual browser automation (CDP + managed modes)
+- In-app Playwright browser with media controls
+- Wake word detection ("Hey Elysia")
 - Screen sharing to Gemini
 - Toast notification system
-- Confirmation dialogs for dangerous actions
-- Safe file operations with path confinement
+- Two-step confirmation dialogs for dangerous actions (terminal + power)
+- Interactive sudo password elevation
+- Safe file operations with path confinement + send2trash
+- Hyprland (Wayland) workspace management
+- Weather and news integration
+- Conversation export
+- Hinglish language support in system prompt
 
 ---
 
