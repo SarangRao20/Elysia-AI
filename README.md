@@ -93,10 +93,10 @@ ELYSIA runs as **3 separate processes** that communicate over HTTP/WebSocket:
 
 ### Platform Abstraction
 The Python agent has a backend abstraction layer for cross-platform support:
-- `desktop_agent/backends/base.py` — abstract interfaces (`WindowManager`, `AudioController`, `ClipboardManager`, `TerminalController`, `Launcher`, `ScreenshotController`)
-- `desktop_agent/backends/factory.py` — OS detection + backend instantiation
-- `desktop_agent/backends/windows.py` — Win32 API (win32gui, ctypes)
-- `desktop_agent/backends/linux_wayland.py` — Hyprland/Wayland (hyprctl)
+- `agent/backends/base.py` — abstract interfaces (`WindowManager`, `AudioController`, `ClipboardManager`, `TerminalController`, `Launcher`, `ScreenshotController`)
+- `agent/backends/factory.py` — OS detection + backend instantiation
+- `agent/backends/windows.py` — Win32 API (win32gui, ctypes)
+- `agent/backends/linux_wayland.py` — Hyprland/Wayland (hyprctl)
 
 ---
 
@@ -152,7 +152,7 @@ elysia-ai-assistant/
 │       ├── Toast.tsx               # Toast notification system for reminders
 │       └── HolographicProjector.tsx # Simple iframe-based web projector overlay
 │
-└── desktop_agent/
+└── agent/                    # Python agent (FastAPI + Playwright)
     ├── __init__.py
     ├── main.py                 # FastAPI app setup, tool registry, /execute dispatcher
     ├── registry.py             # Tool registration system
@@ -439,7 +439,7 @@ Three tools for Hyprland compositor: `switchWorkspace`, `listWorkspaces`, `moveT
 npm install
 
 # Install Python dependencies
-pip install -r desktop_agent/requirements.txt
+pip install -r agent/requirements.txt
 
 # Copy environment template and set your API key
 cp .env.local .env
@@ -452,7 +452,7 @@ bash start_elysia.sh
 Or manually:
 ```bash
 # Terminal 1: Python desktop agent
-python desktop_agent/main.py
+python agent/server.py
 
 # Terminal 2: Node.js server + Vite dev server
 npm run dev

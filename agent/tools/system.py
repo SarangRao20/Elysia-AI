@@ -12,7 +12,7 @@ from __future__ import annotations
 import platform
 from typing import Any, Dict
 
-from .registry import register
+from ..registry import register
 
 
 def _bytes_human(n: float) -> str:

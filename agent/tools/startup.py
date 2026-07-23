@@ -22,7 +22,7 @@ import os
 import sys
 from typing import Any, Dict
 
-from .registry import ToolError, register
+from ..registry import ToolError, register
 
 RUN_KEY_PATH = r"Software\\Microsoft\\Windows\\CurrentVersion\\Run"
 VALUE_NAME = "Elysia"
@@ -30,9 +30,9 @@ SILENT_LAUNCHER = "start-elysia-silent.bat"
 
 
 def _project_root() -> str:
-    """Return the project root (parent of the desktop_agent package)."""
-    # desktop_agent/tools_startup.py -> .. -> project root
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    """Return the project root."""
+    # agent/tools/startup.py -> agent -> project root
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def _launcher_path() -> str:
@@ -62,7 +62,7 @@ def _ensure_launcher_exists() -> str:
             f'set "PYTHON_EXE={py}"',
             "cd /d \"%PROJECT_DIR%\"",
             (
-                'start "" /B "%PYTHON_EXE%" -m uvicorn desktop_agent.main:app '
+                'start "" /B "%PYTHON_EXE%" -m uvicorn agent.server:app '
                 '--host 127.0.0.1 --port 8765'
             ),
             "timeout /t 3 /nobreak >nul",

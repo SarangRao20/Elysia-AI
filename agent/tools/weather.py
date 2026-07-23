@@ -2,7 +2,7 @@ import urllib.request
 import urllib.parse
 import json
 from typing import Any, Dict
-from .registry import register, ToolError
+from ..registry import register, ToolError
 
 @register("getWeather")
 def get_weather(args: Dict[str, Any]) -> Dict[str, Any]:

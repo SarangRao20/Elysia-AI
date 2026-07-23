@@ -14,8 +14,8 @@ import time
 import uuid
 from typing import Any, Dict
 
-from .registry import STATE, ToolError, register
-from .backends import get_backend
+from ..registry import STATE, ToolError, register
+from ..backends import get_backend
 
 # Destructive command patterns that are always blocked.
 # Only genuinely dangerous operations are listed here.

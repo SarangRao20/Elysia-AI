@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 from typing import Any, Dict
-from .registry import register, ToolError
+from ..registry import register, ToolError
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")

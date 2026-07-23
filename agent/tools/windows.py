@@ -7,8 +7,8 @@ Uses the backend abstraction to handle OS-specific window management.
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
-from .registry import ToolError, register
-from .backends import get_backend
+from ..registry import ToolError, register
+from ..backends import get_backend
 
 SW_MINIMIZE = 6
 SW_MAXIMIZE = 3

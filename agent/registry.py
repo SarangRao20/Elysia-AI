@@ -193,52 +193,52 @@ DESKTOP_TOOL_NAMES = [
 # the whole agent unstartable, which we want to avoid. The modules themselves
 # keep optional-dependency imports lazy/try-except.
 _MODULE_NAMES = [
-    "tools_confirmation",
-    "tools_applications",
-    "tools_websites",
-    "tools_search",
-    "tools_files",
-    "tools_pc",
-    "tools_windows",
-    "tools_clipboard",
-    "tools_screenshot",
-    "tools_browser",
-    "tools_coding",
-    "tools_system",
-    "tools_startup",
-    "tools_terminal",
-    "tools_iitm",
-    "tools_weather",
-    "tools_hyprland",
-    "tools_news",
-    "tools_conversation",
-    "tools_os_input",
-    "tools_google",
+    "tools.confirmation",
+    "tools.applications",
+    "tools.websites",
+    "tools.search",
+    "tools.files",
+    "tools.pc",
+    "tools.windows",
+    "tools.clipboard",
+    "tools.screenshot",
+    "tools.browser",
+    "tools.coding",
+    "tools.system",
+    "tools.startup",
+    "tools.terminal",
+    "tools.iitm",
+    "tools.weather",
+    "tools.hyprland",
+    "tools.news",
+    "tools.conversation",
+    "tools.os_input",
+    "tools.google",
 ]
 
 
 def load_all() -> None:
-    import desktop_agent.tools_confirmation
-    import desktop_agent.tools_applications
-    import desktop_agent.tools_websites
-    import desktop_agent.tools_search
-    import desktop_agent.tools_files
-    import desktop_agent.tools_pc
-    import desktop_agent.tools_windows
-    import desktop_agent.tools_clipboard
-    import desktop_agent.tools_screenshot
-    import desktop_agent.tools_browser
-    import desktop_agent.tools_coding
-    import desktop_agent.tools_system
-    import desktop_agent.tools_startup
-    import desktop_agent.tools_terminal
-    import desktop_agent.tools_iitm
-    import desktop_agent.tools_weather
-    import desktop_agent.tools_hyprland
-    import desktop_agent.tools_news
-    import desktop_agent.tools_conversation
-    import desktop_agent.tools_os_input
-    import desktop_agent.tools_google
+    import agent.tools.confirmation
+    import agent.tools.applications
+    import agent.tools.websites
+    import agent.tools.search
+    import agent.tools.files
+    import agent.tools.pc
+    import agent.tools.windows
+    import agent.tools.clipboard
+    import agent.tools.screenshot
+    import agent.tools.browser
+    import agent.tools.coding
+    import agent.tools.system
+    import agent.tools.startup
+    import agent.tools.terminal
+    import agent.tools.iitm
+    import agent.tools.weather
+    import agent.tools.hyprland
+    import agent.tools.news
+    import agent.tools.conversation
+    import agent.tools.os_input
+    import agent.tools.google
 
 
 __all__ = ["TOOLS", "STATE", "DESKTOP_TOOL_NAMES", "ToolError", "register", "load_all"]

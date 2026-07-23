@@ -1,7 +1,7 @@
 import subprocess
 import re
 from typing import Any, Dict
-from .registry import register, ToolError
+from ..registry import register, ToolError
 
 
 @register("switchWorkspace")

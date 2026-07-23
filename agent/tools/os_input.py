@@ -1,6 +1,6 @@
 from typing import Any, Dict
 import sys
-from .registry import ToolError, register
+from ..registry import ToolError, register
 
 @register("osType")
 def os_type(args: Dict[str, Any]) -> Dict[str, Any]:

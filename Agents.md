@@ -1,7 +1,7 @@
 # System Agents
 
 ## 1. The Python Desktop Agent
-While Elysia's mind lives in the cloud (via Google Gemini) and her body lives in the React overlay UI, her **hands** are the Python Desktop Agent (`desktop_agent/`). 
+While Elysia's mind lives in the cloud (via Google Gemini) and her body lives in the React overlay UI, her **hands** are the Python Desktop Agent (`agent/`). 
 Because a web browser (even in an Electron-like container) has strict security sandboxes, it cannot natively run complex terminal commands, read other applications' windows, or manage the OS. The Python Agent solves this by running as a privileged background FastAPI service that the Node backend talks to over HTTP.
 
 ## 2. Capabilities (70+ tools)

@@ -1,7 +1,7 @@
 import urllib.request
 import xml.etree.ElementTree as ET
 from typing import Any, Dict
-from .registry import register, ToolError
+from ..registry import register, ToolError
 
 
 @register("getNews")

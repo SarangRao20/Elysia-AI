@@ -20,7 +20,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .registry import ToolError, register
+from ..registry import ToolError, register
 
 HOME = Path(os.path.expanduser("~"))
 

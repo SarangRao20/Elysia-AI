@@ -18,7 +18,7 @@ import threading
 from typing import Any, Dict, Optional
 from urllib.parse import quote_plus
 
-from .registry import STATE, ToolError, register
+from ..registry import STATE, ToolError, register
 
 # A dedicated event loop + thread runs all Playwright coroutines, because
 # Playwright's sync API can deadlock under FastAPI's threadpool. We use the
@@ -627,7 +627,7 @@ __all__ = [
 # Re-register the async handlers as synchronous wrappers so the registry
 # dispatcher (which is sync) can call them uniformly.
 # This MUST run after all @register decorators have executed.
-from .registry import TOOLS  # noqa: E402
+from ..registry import TOOLS  # noqa: E402
 
 for _name in [
     "desktopBrowserOpen",

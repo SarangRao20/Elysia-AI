@@ -11,9 +11,9 @@ import platform
 import subprocess
 from typing import Any, Dict, Optional
 
-from .registry import ToolError, register
-from .tools_confirmation import ACTION_LABEL, consume_token
-from .backends import get_backend
+from ..registry import ToolError, register
+from .confirmation import ACTION_LABEL, consume_token
+from ..backends import get_backend
 
 @register("volumeUp")
 def volume_up(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -154,7 +154,7 @@ def execute_power_action(args: Dict[str, Any]) -> Dict[str, Any]:
     action = (args.get("action") or "").strip().lower()
     token: Optional[str] = args.get("execute_token")
 
-    from .tools_confirmation import DANGEROUS_ACTIONS
+    from .confirmation import DANGEROUS_ACTIONS
 
     if action not in DANGEROUS_ACTIONS:
         raise ToolError(

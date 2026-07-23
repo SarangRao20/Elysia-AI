@@ -5,7 +5,7 @@ cd "$(dirname "$0")" || exit 1
 
 # Kill any ghost background processes holding ports
 pkill -f "run_agent.py" 2>/dev/null || true
-pkill -f "uvicorn desktop_agent.main:app" 2>/dev/null || true
+pkill -f "uvicorn agent.server:app" 2>/dev/null || true
 
 echo "Starting ELYSIA..."
 echo "=========================================================="

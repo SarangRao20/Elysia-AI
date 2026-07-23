@@ -5,7 +5,7 @@ Elysia AI operates on a client-server-agent architecture to separate the UI, the
 
 1. **Frontend (Overlay UI):** Renders the transparent, glassmorphic UI overlay on the desktop. Captures user audio and text inputs.
 2. **Backend Node Server (`server.ts`):** Handles communication with the Google Gemini API, manages configuration (like API keys), and orchestrates requests between the UI and the Python Agent.
-3. **Desktop Agent (`desktop_agent/`):** A privileged Python FastAPI service running locally that provides 70+ OS-level capabilities — browser automation, terminal execution, file management, desktop control — securely to the Node server via HTTP.
+3. **Desktop Agent (`agent/`):** A privileged Python FastAPI service running locally that provides 70+ OS-level capabilities — browser automation, terminal execution, file management, desktop control — securely to the Node server via HTTP.
 
 ## 2. Directory Structure
 ```text
@@ -14,7 +14,7 @@ Elysia AI operates on a client-server-agent architecture to separate the UI, the
 │   ├── components/       # UI Components (Visualizer, Settings, Dashboard)
 │   ├── lib/              # Utility functions, stores, and API wrappers
 │   └── index.css         # Global Tailwind and animation styles
-├── desktop_agent/        # Python OS-level Agent (FastAPI)
+├── agent/        # Python OS-level Agent (FastAPI)
 │   ├── backends/         # OS-specific implementations (linux_wayland.py, windows.py)
 │   │   ├── base.py       # Abstract base classes
 │   │   ├── factory.py    # Platform-aware backend selection

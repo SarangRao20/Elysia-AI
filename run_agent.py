@@ -67,7 +67,7 @@ def main() -> None:
     log.info("Starting Elysia agent (frozen=%s) on %s:%d", frozen, host, port)
 
     try:
-        from desktop_agent.main import app
+        from agent.server import app
         import uvicorn
     except Exception:
         log.exception("Fatal: could not import agent application.")

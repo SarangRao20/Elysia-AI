@@ -15,7 +15,7 @@ import secrets
 import time
 from typing import Any, Dict
 
-from .registry import STATE, ToolError, register
+from ..registry import STATE, ToolError, register
 
 # Actions that can ONLY run after explicit confirmation.
 DANGEROUS_ACTIONS = {"shutdown", "restart", "sleep", "lock"}
@@ -89,7 +89,7 @@ def request_terminal_action(args: Dict[str, Any]) -> Dict[str, Any]:
 
     # Reject blacklisted commands immediately — never ask user for confirmation
     # on something we will block anyway
-    from .tools_terminal import _is_blacklisted
+    from .terminal import _is_blacklisted
     if _is_blacklisted(command):
         handler_name = "runTerminalCommand" if "command" in args else "installPackage"
         raise ToolError(

@@ -440,7 +440,7 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, themeColor,
                             <div className="text-sm font-mono text-slate-400 mt-1">
                               {agentHealth.online
                                 ? `Active on port 8765. ${agentHealth.toolCount ?? 0} modules loaded.`
-                                : "Please start the Python agent (uvicorn desktop_agent.main:app --port 8765)"}
+                                : "Please start the Python agent (uvicorn agent.server:app --port 8765)"}
                             </div>
                           </div>
                           <Cpu size={32} className={agentHealth.online ? "text-emerald-400/50" : "text-rose-400/50"} />

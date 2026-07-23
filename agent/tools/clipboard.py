@@ -9,8 +9,8 @@ from __future__ import annotations
 import time
 from typing import Any, Dict
 
-from .registry import ToolError, register
-from .backends import get_backend
+from ..registry import ToolError, register
+from ..backends import get_backend
 
 
 @register("copySelected")

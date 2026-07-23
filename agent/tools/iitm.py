@@ -10,7 +10,7 @@ from __future__ import annotations
 import webbrowser
 from typing import Any, Dict
 
-from .registry import ToolError, register
+from ..registry import ToolError, register
 
 IITM_LINKS = {
     # IITM official

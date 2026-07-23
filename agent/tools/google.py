@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict
 
-from .registry import ToolError, register
+from ..registry import ToolError, register
 
 # ---------------------------------------------------------------------------
 # OAuth helpers

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from .registry import ToolError, register
-from .backends import get_backend
+from ..registry import ToolError, register
+from ..backends import get_backend
 
 APP_COMMANDS: Dict[str, Dict[str, str]] = {
     "notepad": {"exe": "notepad.exe", "image": "notepad.exe", "label": "Notepad", "linux_cmd": "gedit", "linux_image": "gedit"},

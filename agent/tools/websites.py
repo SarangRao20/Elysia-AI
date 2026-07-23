@@ -12,7 +12,7 @@ import webbrowser
 from typing import Any, Dict
 from urllib.parse import quote
 
-from .registry import ToolError, register
+from ..registry import ToolError, register
 
 # Named shortcuts the model can request by friendly name.
 SITE_URLS: Dict[str, str] = {

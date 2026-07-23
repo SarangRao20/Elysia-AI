@@ -59,7 +59,7 @@ const DESKTOP_AGENT_TIMEOUT = 25_000; // ms
 
 /**
  * The complete set of tool names routed to the Python desktop agent.
- * Kept in sync with desktop_agent/registry.py DESKTOP_TOOL_NAMES.
+ * Kept in sync with agent/registry.py DESKTOP_TOOL_NAMES.
  */
 const DESKTOP_TOOLS: ReadonlySet<string> = new Set([
   // applications / websites / search
@@ -188,7 +188,7 @@ function spawnDesktopAgent(): void {
   try {
     const child = spawn(
       py,
-      ["-m", "uvicorn", "desktop_agent.main:app", "--host", "127.0.0.1", "--port", "8765"],
+      ["-m", "uvicorn", "agent.server:app", "--host", "127.0.0.1", "--port", "8765"],
       { cwd: process.cwd(), detached: true, stdio: "ignore", windowsHide: true, env: agentEnv }
     );
     child.unref();
@@ -270,7 +270,7 @@ async function callDesktopAgent(
     desktopAgentVerified = false; // mark stale so next call retries the spawn
     const msg = err?.name === "AbortError"
       ? "Desktop agent timed out."
-      : "Desktop agent is not running. Start it with: uvicorn desktop_agent.main:app --port 8765";
+      : "Desktop agent is not running. Start it with: uvicorn agent.server:app --port 8765";
     logError(`AGENT_UNREACHABLE ${tool}: ${msg}`);
     return { ok: false, error: msg };
   }
@@ -932,7 +932,7 @@ async function startServer() {
         "   - BROWSER VISION: Use 'desktopBrowserReadText' to read the visible text content of a webpage (like an OCR for the browser). Use 'desktopBrowserGetLinks' to extract all links from the current page. These let you understand what's on screen without relying on the video feed.\n" +
         "   - IITM BS DEGREE: Use 'iitmOpen' to quickly open IITM BS resources — portal (portal), course dashboard (course), Acegrade (acegrade), MLT notes (mlt_notes), PDSA notes (pdsa_notes), community notes (community_notes), exams (exams). Use 'iitmQuickLinks' to list all available resources. Use 'iitmOpenCustom' for any custom IITM URL. When the user mentions IITM BS, PDSA, MLT, or Acegrade, offer to open the relevant resource.\n" +
         "   - SELF-CLOSE: Use 'shutdownElysia' to gracefully shut down the application when the user asks (e.g. 'Elysia shut down', 'close the app'). You DO NOT need a confirmation token to run this.\n" +
-        "   - CRITICAL: Always describe what you're doing in your warm, in-character voice WHILE the tool runs. If a desktop tool returns an error (especially 'Desktop agent is not running'), gently tell Sarang that the desktop control agent needs to be started (uvicorn desktop_agent.main:app --port 8765). Chain multi-step desktop plans naturally without waiting between steps.\n" +
+        "   - CRITICAL: Always describe what you're doing in your warm, in-character voice WHILE the tool runs. If a desktop tool returns an error (especially 'Desktop agent is not running'), gently tell Sarang that the desktop control agent needs to be started (uvicorn agent.server:app --port 8765). Chain multi-step desktop plans naturally without waiting between steps.\n" +
         "12. BRIGHTNESS & AUTO-START (V2):\n" +
         "   - BRIGHTNESS: Use 'brightnessUp', 'brightnessDown', 'setBrightness' when the user asks to change screen brightness. Respond naturally: 'Alright, I've turned up the brightness for you.'\n" +
         "   - AUTO-START: Use 'enableAutoStart' when the user wants ARIA to start with Windows, 'disableAutoStart' to remove it, 'getAutoStartStatus' to check. Explain what you're doing.\n" +

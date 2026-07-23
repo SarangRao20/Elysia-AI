@@ -15,8 +15,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from .registry import ToolError, register
-from .backends import get_backend
+from ..registry import ToolError, register
+from ..backends import get_backend
 
 SCREENSHOTS_DIR = Path(os.path.expanduser("~")) / "Pictures" / "ElysiaScreenshots"
 

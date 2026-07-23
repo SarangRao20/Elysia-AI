@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from .registry import register
-from .tools_websites import _build_search_url, open_url
+from ..registry import register
+from .websites import _build_search_url, open_url
 
 
 @register("searchWeb")
