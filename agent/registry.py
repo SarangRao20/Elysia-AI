@@ -185,6 +185,10 @@ DESKTOP_TOOL_NAMES = [
     "getEmails",
     "getTasks",
     "createTask",
+    # camera control
+    "cameraList",
+    "cameraOn",
+    "cameraOff",
 ]
 
 
@@ -214,6 +218,7 @@ _MODULE_NAMES = [
     "tools.conversation",
     "tools.os_input",
     "tools.google",
+    "tools.camera",
 ]
 
 
@@ -239,6 +244,7 @@ def load_all() -> None:
     import agent.tools.conversation
     import agent.tools.os_input
     import agent.tools.google
+    import agent.tools.camera
 
 
 __all__ = ["TOOLS", "STATE", "DESKTOP_TOOL_NAMES", "ToolError", "register", "load_all"]

@@ -55,7 +55,7 @@ ELYSIA runs as **3 separate processes** that communicate over HTTP/WebSocket:
 | Process | Port | Runtime | Role |
 |---|---|---|---|---|
 | **Node.js Server** | 3000 | Express + WebSocket | Orchestrator. Bridges browser to Gemini Live API. Handles function calling, memory CRUD, reminders, settings, API key storage. |
-| **Python Desktop Agent** | 8765 | FastAPI + Playwright | OS-level tool execution. 88 tools across 22 modules. Receives `POST /execute { tool, args }` dispatches. Manages browser (CDP/managed modes), screenshots, clipboard, files, power, terminal, Hyprland workspaces, weather, news, coding, conversation export, Google Calendar/Gmail/Tasks, OS input simulation. |
+| **Python Desktop Agent** | 8765 | FastAPI + Playwright | OS-level tool execution. 91 tools across 22 modules. Receives `POST /execute { tool, args }` dispatches. Manages browser (CDP/managed modes), screenshots, clipboard, files, power, terminal, Hyprland workspaces, weather, news, coding, conversation export, Google Calendar/Gmail/Tasks, OS input simulation. |
 | **Vite React Frontend** | 3000 (served) | React 19 + Tailwind CSS v4 | Holographic UI with canvas visualizer, video character or orb animation, settings panel, memory dashboard, transcript, browser agent, text chat fallback, sudo popup. |
 
 ---
@@ -285,7 +285,7 @@ All tools dispatch to either the Python desktop agent (port 8765) or handle dire
 
 ## Desktop Agent (Python)
 
-The Python desktop agent runs on port 8765 and provides **88 tools** across 22 modules:
+The Python desktop agent runs on port 8765 and provides **91 tools** across 22 modules:
 
 ### Tool Modules
 
@@ -521,7 +521,7 @@ cp .env.local .env
 Designed and developed by **Sarang (SarangRao20)** — an independent developer focused on AI-powered desktop automation. Features:
 - Holographic video character system + orb animation mode
 - Persistent memory with AI-powered extraction
-- Cross-platform desktop agent with 88 tools across 22 modules
+- Cross-platform desktop agent with 91 tools across 22 modules
 - Dual browser automation (CDP + managed modes)
 - In-app Playwright browser with media controls
 - Wake word detection ("Hey Elysia")

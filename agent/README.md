@@ -131,7 +131,7 @@ On error:
 
 ---
 
-## Available Tools (88)
+## Available Tools (91)
 
 ### 🖥️ Applications
 | Tool | Description |

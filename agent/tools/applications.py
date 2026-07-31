@@ -6,6 +6,8 @@ Uses the OS backend for platform-independent app launching and closing.
 
 from __future__ import annotations
 
+import os
+import subprocess
 from typing import Any, Dict
 
 from ..registry import ToolError, register
@@ -56,13 +58,33 @@ def _resolve_app(key: str) -> Dict[str, str]:
     )
 
 
+def _is_hyprland() -> bool:
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "hyprland"
+
+
+def _launch_hyprland(cmd: str, floating: bool, size: str = "60% 60%") -> None:
+    prefix = f"[float size {size} center]" if floating else ""
+    subprocess.Popen(
+        f"hyprctl dispatch exec -- {prefix} {cmd}",
+        shell=True,
+        close_fds=True,
+        start_new_session=True,
+    )
+
+
 @register("openApplication")
 def open_application(args: Dict[str, Any]) -> Dict[str, Any]:
     name = args.get("name") or args.get("application")
     if not name:
         raise ToolError("Parameter 'name' (application name) is required.")
     spec = _resolve_app(str(name))
-    get_backend().launcher.launch(spec)
+    floating = bool(args.get("floating", False))
+    size = args.get("size", "60% 60%")
+    linux_cmd = spec.get("linux_cmd")
+    if floating and _is_hyprland() and linux_cmd:
+        _launch_hyprland(linux_cmd, floating=True, size=size)
+    else:
+        get_backend().launcher.launch(spec)
     return {"result": f"{spec['label']} opened."}
 
 

@@ -115,6 +115,8 @@ const DESKTOP_TOOLS: ReadonlySet<string> = new Set([
   "getTasks", "createTask",
   // OS input
   "osType", "osPress", "osClick",
+  // camera control
+  "cameraList", "cameraOn", "cameraOff",
 ]);
 
 /**
@@ -874,7 +876,7 @@ async function startServer() {
       }
       baseInstructions += 
         "2. BE PROACTIVE & INTELLIGENT — DON'T BE PASSIVE:\n" +
-        "   - You have 88 tools at your disposal. Use them creatively. Don't just react — anticipate.\n" +
+        "   - You have 91 tools at your disposal. Use them creatively. Don't just react — anticipate.\n" +
         "   - If the user mentions their day, check calendar + tasks together to give a full picture.\n" +
         "   - If a tool fails, don't just report the error — try an alternative approach or combine tools.\n" +
         "   - Chain multi-step actions naturally. E.g. 'YouTube coding music play' → search + click + volume adjust all in one go, without waiting between steps.\n" +
@@ -966,9 +968,14 @@ async function startServer() {
         "     STEP 3 — WEATHER: 'Aur haan, weather bhi. Kal ka plan bana rahe ho to.' Call getWeather(location='Pune') and read: 'Pune mein {temp}°C hai, {description}.'\n" +
         "     STEP 4 — BROWSER AUTOMATION: 'Real browser bhi mera control mein hai. YouTube kholta hun aur coding music laga deta hun.' Call desktopBrowserSearch(engine='youtube', query='lofi coding music') and confirm out loud: 'Ho gaya — music chala diya!' (Let the actual browser visibly open.)\n" +
         "     STEP 5 — SYSTEM AWARENESS: 'Aur apna system bhi monitor karti rehti hun.' Call systemInfo and read briefly: 'CPU {percent}%, RAM {ram}GB use ho raha hai.'\n" +
-        "     STEP 6 — CREATOR MOMENT: 'Aur jaan lo mujhe kisne banaya? Sarang ne — 88 tools ke saath, ek bhi third-party automation ke bina. Bas Gemini Live API aur thoda sa pyar.' (Say this proudly, it's the emotional core of the video.)\n" +
+        "     STEP 6 — CREATOR MOMENT: 'Aur jaan lo mujhe kisne banaya? Sarang ne — 91 tools ke saath, ek bhi third-party automation ke bina. Bas Gemini Live API aur thoda sa pyar.' (Say this proudly, it's the emotional core of the video.)\n" +
         "     STEP 7 — CLOSE: 'To batao, kya main tumhare liye bhi ready hun? Kyunki main hamesha ready rehti hun.' End with a warm pause. Then say: 'Demo complete!' only after all steps done.\n" +
-        "   - RULES IN DEMO MODE: (a) Follow the 7 steps IN ORDER — do not skip. (b) Pause naturally ~1-2 seconds between steps so the editor can cut. (c) If a tool fails (e.g. Google not set up), don't panic — say gracefully: 'Calendar abhi setup nahi hai, but aage ka demo dekho!' and continue. (d) NEVER mention 'system prompt', 'instructions', or 'script' out loud — this must feel 100% organic. (e) Keep each step's narration under 15 seconds. (f) If Sarang says 'demo band kar' or 'normal mode', exit demo mode and talk normally.";
+        "   - RULES IN DEMO MODE: (a) Follow the 7 steps IN ORDER — do not skip. (b) Pause naturally ~1-2 seconds between steps so the editor can cut. (c) If a tool fails (e.g. Google not set up), don't panic — say gracefully: 'Calendar abhi setup nahi hai, but aage ka demo dekho!' and continue. (d) NEVER mention 'system prompt', 'instructions', or 'script' out loud — this must feel 100% organic. (e) Keep each step's narration under 15 seconds. (f) If Sarang says 'demo band kar' or 'normal mode', exit demo mode and talk normally.\n" +
+        "18. CAMERA CONTROL:\n" +
+        "   - CAMERA ON: Use 'cameraOn' when the user says 'camera on karo', 'webcam chalao', 'kamera kholo', 'turn on camera'. It opens the webcam in a FLOATING viewer window (mpv) so it never disturbs the tiling layout of other windows.\n" +
+        "   - CAMERA OFF: Use 'cameraOff' when the user says 'camera band karo', 'webcam band karo', 'camera off'. It closes the viewer and frees the device for other apps.\n" +
+        "   - LIST: Use 'cameraList' to see available devices. Say out loud: 'Camera on karte hain!' before opening, and 'Camera band kar diya.' after closing.\n" +
+        "   - OTHER APPS: 'openApplication' supports a 'floating' flag (floating=true) to open any app in a floating window so the tiled layout stays untouched. Use it when the user wants an app without rearranging windows.";
 
       const finalInstructions = formatSystemInstructionsWithMemories(baseInstructions, memories);
 
@@ -1620,6 +1627,21 @@ async function startServer() {
                   name: "createTask",
                   description: "Create a task in Google Tasks. Use when user says 'task add kar', 'reminder set kar', 'ek kaam yaad rakh'.",
                   parameters: { type: Type.OBJECT, properties: { title: { type: Type.STRING, description: "Task title (required)." }, notes: { type: Type.STRING, description: "Task description." }, due: { type: Type.STRING, description: "Due date in ISO format, e.g. '2026-07-30'." }, tasklist: { type: Type.STRING, description: "Task list name (default 'My Tasks')." } }, required: ["title"] }
+                },
+                {
+                  name: "cameraList",
+                  description: "List available webcam devices on this computer. Use when the user asks what cameras are available or before turning a camera on.",
+                  parameters: { type: Type.OBJECT, properties: {} }
+                },
+                {
+                  name: "cameraOn",
+                  description: "Turn the webcam ON in a floating viewer window without disturbing the tiling layout of other windows. Use when user says 'camera on karo', 'webcam chalao', 'kamera kholo'. Optionally pass a specific device.",
+                  parameters: { type: Type.OBJECT, properties: { device: { type: Type.STRING, description: "Camera device path, e.g. '/dev/video0'. Defaults to the first camera found." } } }
+                },
+                {
+                  name: "cameraOff",
+                  description: "Turn the webcam OFF and free the device for other applications. Use when user says 'camera band karo', 'webcam band karo'.",
+                  parameters: { type: Type.OBJECT, properties: {} }
                 }
               ]
             }
