@@ -96,7 +96,9 @@ The Python agent has a backend abstraction layer for cross-platform support:
 - `agent/backends/base.py` — abstract interfaces (`WindowManager`, `AudioController`, `ClipboardManager`, `TerminalController`, `Launcher`, `ScreenshotController`)
 - `agent/backends/factory.py` — OS detection + backend instantiation
 - `agent/backends/windows.py` — Win32 API (win32gui, ctypes)
-- `agent/backends/linux_wayland.py` — Hyprland/Wayland (hyprctl)
+- `agent/backends/linux_wayland.py` — Hyprland/Wayland (hyprctl, grim, wpctl)
+- `agent/backends/linux_gnome.py` — GNOME/X11 (wmctrl, xdotool, xclip)
+- `agent/backends/macos.py` — macOS (osascript, AppleScript)
 
 ---
 
@@ -206,7 +208,7 @@ elysia-ai-assistant/
 - When detected, the visualizer transitions to listening state and captures speech
 
 ### Function Calling
-- Gemini can invoke ~90 server-side tools during conversation across 22 modules
+- Gemini can invoke ~130 server-side tools during conversation across 21 modules + server-native handlers
 - Tools are dispatched via `POST /execute` to the Python Desktop Agent (port 8765)
 - Terminal commands and power actions use a **two-step token confirmation** system
 - Blacklisted commands (`rm -rf`, `:(){:|:&};:`, etc.) are blocked at the token generation step — the AI **never** asks the user to confirm
@@ -266,7 +268,7 @@ After each conversation turn, Gemini analyzes a slice of recent messages and pro
 
 ### Function Calling (Server-Side Tools)
 
-ELYSIA registers **~90 function declarations** with Gemini, spanning:
+ELYSIA registers **~113 function declarations** with Gemini, spanning:
 
 | Category | Example Tools |
 |---|---|
@@ -317,6 +319,8 @@ The Python agent abstracts OS-specific operations through a backend layer:
 - `backends/factory.py` — OS detection + backend instantiation
 - `backends/windows.py` — Win32 API (win32gui, ctypes)
 - `backends/linux_wayland.py` — Hyprland/Wayland (hyprctl, wpctl, brightnessctl)
+- `backends/linux_gnome.py` — GNOME/X11 (wmctrl, xdotool, xclip)
+- `backends/macos.py` — macOS (osascript, AppleScript)
 
 ### Browser Modes
 
@@ -514,7 +518,7 @@ cp .env.local .env
 
 ## How This Was Built
 
-Built from scratch by **Sarang (SarangRao20)** — an independent developer focused on AI-powered desktop automation. Features:
+Designed and developed by **Sarang (SarangRao20)** — an independent developer focused on AI-powered desktop automation. Features:
 - Holographic video character system + orb animation mode
 - Persistent memory with AI-powered extraction
 - Cross-platform desktop agent with 88 tools across 22 modules
