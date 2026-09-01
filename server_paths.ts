@@ -51,14 +51,10 @@ function readSecrets(): Secrets {
 }
 
 /**
- * Resolve the active Gemini API key.
- * Priority: user-entered key (secrets.json) → environment (.env, dev only).
+ * Resolve the active Gemini API key from environment (.env).
  */
 export function getGeminiApiKey(): string | undefined {
-  const stored = readSecrets().geminiApiKey?.trim();
-  if (stored) return stored;
-  const env = process.env.GEMINI_API_KEY?.trim();
-  return env || undefined;
+  return process.env.GEMINI_API_KEY?.trim() || undefined;
 }
 
 /** Whether any usable key is configured (without revealing it). */
