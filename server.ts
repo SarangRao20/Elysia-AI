@@ -984,6 +984,9 @@ async function startServer() {
       let dialogueHistory: { role: string; text: string }[] = [];
       let currentModelResponseText = "";
       
+      console.log("[Gemini Connect] Attempting to establish Live session...");
+      console.log(`[Gemini Connect] Using voice: ${voiceName}, avatar: ${avatarStyle}`);
+      
       const session = await ai.live.connect({
         model: "gemini-3.1-flash-live-preview",
         config: {
@@ -995,52 +998,6 @@ async function startServer() {
           tools: [
             {
               functionDeclarations: [
-                {
-                  name: "browserOpen",
-                  description: "Opens a designated website URL or interface tab inside Elysia's web agent console.",
-                  parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                      url: {
-                        type: Type.STRING,
-                        description: "The destination website address or path, e.g. youtube.com, google.com, instagram.com, wikipedia.org."
-                      }
-                    },
-                    required: ["url"]
-                  }
-                },
-                {
-                  name: "browserSearch",
-                  description: "Enters a query search term inside the active website's search box (Google Search or YouTube Search).",
-                  parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                      query: {
-                        type: Type.STRING,
-                        description: "The text query term to search for."
-                      }
-                    },
-                    required: ["query"]
-                  }
-                },
-                {
-                  name: "browserClick",
-                  description: "Traces computer cursor and clicks on a target button, link, or video cell ID inside the active webpage viewport.",
-                  parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                      selector: {
-                        type: Type.STRING,
-                        description: "The selector target ID, e.g. 'video-mWRsgZjdfQI' for a video, 'search-result-0' for Google link index, or 'play-button', 'pause-button'."
-                      },
-                      description: {
-                        type: Type.STRING,
-                        description: "A short, friendly label description of the item being clicked, e.g. 'Imagine Dragons - Believer video element'."
-                      }
-                    },
-                    required: ["selector"]
-                  }
-                },
                 {
                   name: "browserMediaControl",
                   description: "Controls ongoing video/audio stream media properties on YouTube, like play, pause, volume, mute, skip, and fullscreen.",
@@ -1058,46 +1015,6 @@ async function startServer() {
                       }
                     },
                     required: ["action"]
-                  }
-                },
-                {
-                  name: "browserScroll",
-                  description: "Scrolls the currently active webpage vertically up or down.",
-                  parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                      direction: {
-                        type: Type.STRING,
-                        description: "The scroll vector movement.",
-                        enum: ["up", "down"]
-                      },
-                      amount: {
-                        type: Type.INTEGER,
-                        description: "The distance height parameter in pixels (defaults to 300)."
-                      }
-                    }
-                  }
-                },
-                {
-                  name: "browserType",
-                  description: "Enters typed letters/commands inside the active input container.",
-                  parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                      text: {
-                        type: Type.STRING,
-                        description: "The exact letters to type in."
-                      }
-                    },
-                    required: ["text"]
-                  }
-                },
-                {
-                  name: "browserGoBack",
-                  description: "Navigates back to the previous webpage inside the current tab memory history.",
-                  parameters: {
-                    type: Type.OBJECT,
-                    properties: {}
                   }
                 },
                 {
@@ -1854,14 +1771,22 @@ async function startServer() {
               }
             }
           },
-          onclose: () => {
-            console.log("Gemini Live session closed");
+          onclose: (e: any) => {
+            console.log(`Gemini Live session closed (code=${e?.code}, reason=${e?.reason || "none"}, wasClean=${e?.wasClean})`);
             clientWs.send(JSON.stringify({ type: "status", status: "session_closed" }));
+          },
+          onerror: (error: any) => {
+            console.error("[Gemini Live Error]:", error);
+            clientWs.send(JSON.stringify({ 
+              type: "error", 
+              error: `Gemini API Error: ${error?.message || String(error)}` 
+            }));
           }
         }
       });
       
       clientWs.send(JSON.stringify({ type: "status", status: "connected" }));
+      console.log("[Gemini Connect] Session established successfully");
       
       clientWs.on("message", (rawMsg) => {
         try {
