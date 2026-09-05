@@ -30,6 +30,14 @@ A real-time, voice-to-voice holographic AI companion desktop assistant built on 
 
 ## Architecture Overview
 
+<div align="center">
+
+| Architecture diagram | Anime‑girl frame |
+|----------------------|-----------------|
+| <img src="assets/chatgpt.png" alt="ELYSIA‑AI architecture" width="460"> | <img src="assets/frame.jpg" alt="Anime girl frame" width="460"> |
+
+</div>
+
 ELYSIA runs as **3 separate processes** that communicate over HTTP/WebSocket:
 
 ```
