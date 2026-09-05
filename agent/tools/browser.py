@@ -334,6 +334,43 @@ async def browser_search(args: Dict[str, Any]) -> Dict[str, Any]:
     return {"result": f"Searched {engine} for '{query}'.", "url": page.url}
 
 
+@register("desktopBrowserOpenYoutubeVideo")
+async def browser_open_youtube_video(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Open the first YouTube search result directly by following its canonical href."""
+    query = args.get("query") or args.get("q")
+    if not query:
+        raise ToolError("Parameter 'query' is required.")
+
+    page = await _page()
+    search_url = "https://www.youtube.com/results?search_query=" + quote_plus(str(query))
+
+    try:
+        await page.goto(search_url, wait_until="domcontentloaded", timeout=20000)
+        await page.wait_for_selector("ytd-video-renderer", timeout=10000)
+
+        first_video = page.locator("ytd-video-renderer").first
+        link = first_video.locator("a#video-title").first
+        await link.wait_for(state="visible", timeout=5000)
+
+        href = await link.get_attribute("href")
+        if not href:
+            raise ToolError("Could not find a video URL in the first YouTube result.")
+
+        if href.startswith("/"):
+            href = "https://www.youtube.com" + href
+
+        await page.goto(href, wait_until="domcontentloaded", timeout=20000)
+        if "/watch" not in page.url:
+            raise ToolError(f"Expected YouTube watch page, got {page.url}")
+
+        return {
+            "result": f"Opened first YouTube video for '{query}'.",
+            "url": page.url,
+        }
+    except Exception as e:  # noqa: BLE001
+        raise ToolError(f"Could not open YouTube video: {e}")
+
+
 @register("desktopBrowserClick")
 async def browser_click(args: Dict[str, Any]) -> Dict[str, Any]:
     selector = args.get("selector")
@@ -610,6 +647,7 @@ __all__ = [
     "browser_close_tab",
     "browser_tab_action",
     "browser_search",
+    "browser_open_youtube_video",
     "browser_click",
     "browser_type",
     "browser_fill_form",
@@ -635,6 +673,7 @@ for _name in [
     "desktopBrowserOpenTab",
     "desktopBrowserCloseTab",
     "desktopBrowserSearch",
+    "desktopBrowserOpenYoutubeVideo",
     "desktopBrowserClick",
     "desktopBrowserType",
     "desktopBrowserFillForm",

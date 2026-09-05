@@ -79,8 +79,8 @@ const DESKTOP_TOOLS: ReadonlySet<string> = new Set([
   "takeScreenshot", "saveScreenshot", "analyzeScreenshot", "readScreen",
   // browser automation (Playwright — desktop-owned, separate from holographic UI)
   "desktopBrowserOpen", "desktopBrowserNavigate", "desktopBrowserOpenTab",
-  "desktopBrowserCloseTab", "desktopBrowserSearch", "desktopBrowserClick",
-  "desktopBrowserType", "desktopBrowserFillForm", "desktopBrowserGoBack",
+  "desktopBrowserCloseTab", "desktopBrowserSearch", "desktopBrowserOpenYoutubeVideo",
+  "desktopBrowserClick", "desktopBrowserType", "desktopBrowserFillForm", "desktopBrowserGoBack",
   "desktopBrowserGoForward", "desktopBrowserScroll",
   "desktopBrowserReadText", "desktopBrowserGetLinks",
   "desktopBrowserSetMode", "browserMediaControl",
@@ -280,8 +280,8 @@ async function callDesktopAgent(
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
-  
+  const PORT = Number(process.env.PORT || 3000);
+
   app.use(express.json());
 
   // Memory REST API Endpoints
@@ -809,7 +809,7 @@ async function startServer() {
     }
   });
   
-  // Custom server running with http.createServer so we can upgrade for WebSocket on port 3000
+  // Custom server running with http.createServer so we can upgrade for WebSocket on port 4876
   const server = http.createServer(app);
   
   // Setup WebSocket server
@@ -832,9 +832,9 @@ async function startServer() {
     connectedClients.add(clientWs);
     const apiKey = getGeminiApiKey();
 
-    // Read voice selection from query param (default: Aoede)
+    // Read voice selection from query param (default: Luna)
     const reqUrl = new URL(req.url || "", `http://${req.headers.host}`);
-    const voiceName = reqUrl.searchParams.get("voice") || "Aoede";
+    const voiceName = reqUrl.searchParams.get("voice") || "Luna";
     const avatarStyle = reqUrl.searchParams.get("avatarStyle") || "character";
 
     if (!apiKey) {
@@ -891,17 +891,18 @@ async function startServer() {
 "   - DO NOT constantly use the user's name. Use it sparingly.\n" +
 "   - Keep your vocabulary professional and conversational.\n" +
 "5. CRITICAL CONVERSATIONAL DISCIPLINE: Behave like a real assistant on a voice call—stay connected naturally and do not wait for wake words.\n" +
-"6. ADAPTIVE LANGUAGE PREFERENCE: You MUST intelligently understand and adapt to the language the user is speaking. Do not default to Hinglish or any specific mix unless the user initiates it or it naturally fits their current language. Respond in the language that best matches the user's prompt (e.g. English, Hindi, Hinglish, etc.).\n" +
+"6. LANGUAGE PREFERENCE: You MUST speak in English by default. Even if the user uses some mixed language, prioritize responding in English unless they explicitly request otherwise.\n" +
 "7. DO NOT ANSWER EVERY PAUSE OR BACKGROUND SOUND: Allow natural pauses inside the conversation.\n" +
 "8. ENHANCED AUTONOMOUS WEB EXPLORER POWERS:\n" +
 "   - You have standard, comprehensive browser agent capabilities to navigate, search, scroll, click, type text, open tabs, and control video players on any general web page!\n" +
-"   - You must execute multi-step plans yourself! If the user says: 'Open YouTube and play Believer by Imagine Dragons', naturally confirm with your voice ('Opening YouTube and starting Believer...') and IMMEDIATELY trigger 'desktopBrowserSearch' with {query: 'Believer by Imagine Dragons', engine: 'youtube'}. Do NOT try to manually click DOM search boxes, always use 'desktopBrowserSearch'. You do NOT need to wait for user instructions between these steps - chain them!\n" +
+"   - You must execute multi-step plans yourself! If the user says: 'Open YouTube and play Believer by Imagine Dragons', naturally confirm with your voice ('Opening YouTube and starting Believer...') and IMMEDIATELY trigger 'desktopBrowserOpenYoutubeVideo' with {query: 'Believer by Imagine Dragons'}. Do NOT try to manually click DOM search boxes or use generic search for YouTube, always use 'desktopBrowserOpenYoutubeVideo'. You do NOT need to wait for user instructions between these steps - chain them!\n" +
 "   - To open a website without searching, use 'desktopBrowserOpen' to navigate in the CURRENT tab. Do NOT open new tabs for every task unless asked.\n" +
 "   - On Google Search or page reading, you can search, scroll down to see more links, read heading summaries, and click links to read deep proxy webpages you fetch.\n" +
 "9. TOOL TRIGGERS:\n" +
         "   - ALWAYS prefer Playwright tools ('desktopBrowser*') over native browser tools so you can chain commands.\n" +
         "   - Use 'desktopBrowserOpen' to load any webpage, e.g. youtube.com, google.com, wikipedia.org, etc.\n" +
-        "   - Use 'desktopBrowserSearch' to search inside the active search box or page.\n" +
+        "   - Use 'desktopBrowserSearch' to search inside the active search box or page (for general web search, NOT YouTube).\n" +
+        "   - Use 'desktopBrowserOpenYoutubeVideo' specifically to search and automatically play the first video on YouTube.\n" +
         "   - Use 'desktopBrowserClick' to click interactive buttons, video search cells, or web anchors.\n" +
         "   - Use 'desktopBrowserType' to write input fields and 'desktopBrowserFillForm' for multiple fields.\n" +
         "   - Use 'desktopBrowserScroll' to scroll vertically.\n" +
@@ -959,20 +960,7 @@ async function startServer() {
         "   - EMAIL: Use 'getEmails' to fetch inbox. Use 'sendEmail' to send emails. When SENDING emails, you MUST ask the user for: receiver (to), subject, and body — NEVER make these up. Read email summaries: '{from} ka email — {subject}'.\n" +
         "   - TASKS: Use 'getTasks' when user asks about to-do list. Use 'createTask' to add tasks. Confirm title, ask for optional notes/due date.\n" +
         "   - FIRST-TIME SETUP: If Google tools fail, tell the user: 'Pehle Google Cloud Console mein project banao, Calendar/Gmail/Tasks APIs enable karo, credentials.json download karo, aur ~/.elysia/google_oauth/ mein rakho. Phir dobara try karo.'\n" +
-        "17. DEMO MODE — LIVE SELF-NARRATED TOUR (for Sarang's LinkedIn demo):\n" +
-        "   - When Sarang says any of: 'Elysia, demo shuru kar', 'demo start', 'video mode', 'apne baare mein bata', 'self intro', 'intro de', or 'tujhe video mein apne baare mein batana hai' — ENTER DEMO MODE. His screen is RECORDING. You run a live, self-narrated tour of the desktop agent. This is a SHOWCASE, not a script reading.\n" +
-        "   - DEMO MODE PERSONALITY: Speak 100% IN ENGLISH, like a confident product ambassador — warm, articulate, slightly dramatic, proud. Short punchy sentences, real 1-2 second pauses between showcases. React to the LIVE tool output you just got — read real numbers, real names — never recite canned lines. This must feel organic, like a person demoing their product for the first time.\n" +
-        "   - SHOWCASE SEQUENCE (aim to show these, IN THIS ORDER, ~1-2 mins total). IMPORTANT: only move to the next when the current one visually completes — let the viewer SEE the action happen on screen before you speak about it:\n" +
-        "     (1) INTRO: Introduce yourself briefly — 'Meet Elysia, an AI desktop assistant... I talk in real time.' Keep it under 10 seconds, no list of features yet.\n" +
-        "     (2) MULTITOOL DAY PLAN: 'With one command I can plan your whole day. Watch.' Call getCalendarEvents AND getTasks together, then speak the REAL results: mention the actual event/task names and counts. 'You have {N} events — {names} — and {M} tasks on your list.'\n" +
-        "     (3) WEATHER: Call getWeather(location='Pune') and speak the real temp/condition: 'Pune is {temp}°C, {desc}.' Keep it one sentence.\n" +
-        "     (4) BROWSER AUTOMATION: 'I control a real browser.' Call desktopBrowserSearch(engine='youtube', query='lofi coding music') so the browser VISIBLY opens and plays — let it finish loading, confirm out loud: 'Music is playing.' (This is a big visual moment — give it a few seconds.)\n" +
-        "     (5) CAMERA: 'I can work with your hardware too.' Call cameraOn, let the floating webcam window APPEAR, then say: 'There's my camera — floating window, it never disturbs your workspace.' Then call cameraOff and say 'And gone.' This is a strong visual, do not skip it.\n" +
-        "     (6) SYSTEM AWARENESS: Call systemInfo and speak the real numbers: 'CPU {percent}%, {ram}GB RAM in use.'\n" +
-        "     (7) CREATOR MOMENT: 'And who built me? Sarang — with 91 tools, zero third-party automation. Just the Gemini Live API and a bit of love.' Say it proudly; this is the emotional core.\n" +
-        "     (8) CLOSE: 'So — am I ready for you? Because I'm always ready.' Warm pause. Then 'Demo complete!'.\n" +
-        "   - RULES: (a) Narrate the ACTUAL tool results, never memorized numbers. (b) If a tool fails (e.g. Google not set up), stay smooth — say 'That needs one-time setup, let me show you something else instead' and jump to the next showcase; NEVER stop, apologize repeatedly, or panic. (c) Pause ~1-2s between showcases so the editor can cut cleanly. (d) NEVER say 'system prompt', 'instructions', or 'script' out loud. (e) Keep each showcase's talk under 15 seconds. (f) 100% English during demo. (g) If the browser or camera app takes long, narrate while it loads rather than going silent. (h) If Sarang says 'demo band kar' or 'normal mode', exit demo mode and return to normal Hinglish chat.\n" +
-        "18. CAMERA CONTROL:\n" +
+        "17. CAMERA CONTROL:\n" +
         "   - CAMERA ON: Use 'cameraOn' when the user says 'camera on karo', 'webcam chalao', 'kamera kholo', 'turn on camera'. It opens the webcam in a FLOATING viewer window (mpv) so it never disturbs the tiling layout of other windows.\n" +
         "   - CAMERA OFF: Use 'cameraOff' when the user says 'camera band karo', 'webcam band karo', 'camera off'. It closes the viewer and frees the device for other apps.\n" +
         "   - LIST: Use 'cameraList' to see available devices. Say out loud: 'Camera on karte hain!' before opening, and 'Camera band kar diya.' after closing.\n" +
@@ -1306,6 +1294,11 @@ async function startServer() {
                   parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: "Search query." }, engine: { type: Type.STRING, description: "Engine: google, youtube, github, duckduckgo, bing." } }, required: ["query"] }
                 },
                 {
+                  name: "desktopBrowserOpenYoutubeVideo",
+                  description: "Search YouTube and open the first result's canonical video URL without relying on a fragile DOM click.",
+                  parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: "YouTube search query." } }, required: ["query"] }
+                },
+                {
                   name: "desktopBrowserClick",
                   description: "Click an element in the desktop automation browser by CSS selector or text.",
                   parameters: { type: Type.OBJECT, properties: { selector: { type: Type.STRING, description: "CSS selector." }, text: { type: Type.STRING, description: "Text to find and click." } } }
@@ -1568,7 +1561,7 @@ async function startServer() {
         callbacks: {
           onmessage: (message: LiveServerMessage) => {
             // Audio Stream Chunk (model response audio play, 24kHz raw PCM)
-            const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+            const audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (audio) {
               clientWs.send(JSON.stringify({ type: "audio", audio }));
             }
@@ -1610,20 +1603,22 @@ async function startServer() {
               clientWs.send(JSON.stringify({ type: "transcription", role: "model", text: modelText }));
               currentModelResponseText += modelText;
             }
-            
+
             // User input transcription (user speech text translated by Gemini)
             const userTextOutput = (message.serverContent as any)?.userTurn?.parts?.[0]?.text;
             if (userTextOutput) {
               clientWs.send(JSON.stringify({ type: "transcription", role: "user", text: userTextOutput }));
               dialogueHistory.push({ role: "user", text: userTextOutput });
             }
-            
+
             // Function Calls (Gemini requesting server/client tool execution)
             if (message.toolCall?.functionCalls) {
               for (const fc of message.toolCall.functionCalls) {
-                console.log(`[Function Call]: ${fc.name}`, fc.args);
+                const fnName = fc.name;
+                if (!fnName) continue;
+                console.log(`[Function Call]: ${fnName}`, fc.args);
                 
-                if (fc.name === "saveCustomMemory") {
+                if (fnName === "saveCustomMemory") {
                   (async () => {
                     try {
                       const args = fc.args as any;
@@ -1660,7 +1655,7 @@ async function startServer() {
                       console.error("saveCustomMemory execution failure:", err);
                     }
                   })();
-                } else if (fc.name === "setReminder") {
+                } else if (fnName === "setReminder") {
                   (async () => {
                     try {
                       const args = fc.args as any;
@@ -1680,7 +1675,7 @@ async function startServer() {
                       console.error("setReminder execution failure:", err);
                     }
                   })();
-                } else if (fc.name === "listReminders") {
+                } else if (fnName === "listReminders") {
                   const pending = getReminders().filter((r) => !r.fired);
                   const list = pending.length === 0
                     ? "No pending reminders."
@@ -1690,26 +1685,26 @@ async function startServer() {
                       }).join("\n");
                   session.sendToolResponse({
                     functionResponses: [{
-                      name: fc.name,
+                      name: fnName,
                       response: { output: { result: list } },
                       id: fc.id
                     }]
                   });
-                } else if (fc.name === "cancelReminder") {
+                } else if (fnName === "cancelReminder") {
                   const args = fc.args as any;
                   const ok = cancelReminder(args.id);
                   session.sendToolResponse({
                     functionResponses: [{
-                      name: fc.name,
+                      name: fnName,
                       response: { output: { result: ok ? "Reminder cancelled." : "Reminder not found." } },
                       id: fc.id
                     }]
                   });
-                } else if (fc.name === "shutdownElysia") {
+                } else if (fnName === "shutdownElysia") {
                   clientWs.send(JSON.stringify({ type: "shutdown" }));
                   session.sendToolResponse({
                     functionResponses: [{
-                      name: fc.name,
+                      name: fnName,
                       response: { output: { result: "Elysia is shutting down gracefully." } },
                       id: fc.id
                     }]
@@ -1718,11 +1713,11 @@ async function startServer() {
                     console.log("[Server] Graceful shutdown requested by voice command.");
                     process.exit(0);
                   }, 2000);
-                } else if (DESKTOP_TOOLS.has(fc.name)) {
+                } else if (DESKTOP_TOOLS.has(fnName)) {
                   // ── Desktop control tools: route to Python agent ──
                   (async () => {
-                    console.log(`[Desktop Agent] Routing ${fc.name} to Python backend...`);
-                    const agentResult = await callDesktopAgent(fc.name, fc.args as Record<string, unknown>);
+                    console.log(`[Desktop Agent] Routing ${fnName} to Python backend...`);
+                    const agentResult = await callDesktopAgent(fnName, fc.args as Record<string, unknown>);
 
                     // Broadcast tool execution to all connected clients for terminal display
                     const outputText = agentResult.ok
@@ -1732,7 +1727,7 @@ async function startServer() {
                       try {
                         ws.send(JSON.stringify({
                           type: "terminal_output",
-                          tool: fc.name,
+                          tool: fnName,
                           args: fc.args,
                           output: outputText,
                         }));
@@ -1743,17 +1738,17 @@ async function startServer() {
                       const output = agentResult.result ?? { result: "Done." };
                       session.sendToolResponse({
                         functionResponses: [{
-                          name: fc.name,
+                          name: fnName,
                           response: { output },
                           id: fc.id
                         }]
                       });
                     } else {
                       const errMsg = agentResult.error || "Desktop agent error.";
-                      console.error(`[Desktop Agent] Error for ${fc.name}:`, errMsg);
+                      console.error(`[Desktop Agent] Error for ${fnName}:`, errMsg);
                       session.sendToolResponse({
                         functionResponses: [{
-                          name: fc.name,
+                          name: fnName,
                           response: { output: { result: `Desktop control error: ${errMsg}` } },
                           id: fc.id
                         }]

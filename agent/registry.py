@@ -122,6 +122,7 @@ DESKTOP_TOOL_NAMES = [
     "desktopBrowserOpenTab",
     "desktopBrowserCloseTab",
     "desktopBrowserSearch",
+    "desktopBrowserOpenYoutubeVideo",
     "desktopBrowserClick",
     "desktopBrowserType",
     "desktopBrowserFillForm",
